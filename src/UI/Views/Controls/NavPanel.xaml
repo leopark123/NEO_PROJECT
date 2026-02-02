@@ -1,0 +1,184 @@
+<UserControl x:Class="Neo.UI.Views.Controls.NavPanel"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <!-- Sprint 2.2: Extracted from MainWindow.xaml left navigation bar -->
+    <!-- LEFT NAVIGATION BAR (60px) — UI_SPEC §4.1 column 1 -->
+    <!-- DataContext inherited from MainWindow = MainWindowViewModel -->
+    <!-- All sizes/margins from Dimensions.xaml — zero hardcoded values -->
+    <!-- Width = 60px via Dim.NavigationWidth (src/UI/Styles/Dimensions.xaml:12, UI_SPEC §4.2) -->
+
+    <Border Width="{StaticResource Dim.NavigationWidth}"
+            Background="{StaticResource BackgroundBrush}"
+            BorderBrush="{StaticResource BorderBrush}"
+            BorderThickness="{StaticResource Dim.NavBorderThickness}">
+        <StackPanel VerticalAlignment="Top" Margin="{StaticResource Dim.NavStackMargin}">
+
+            <!-- 首页 — NavigateCommand("Home") -->
+            <Button Width="{StaticResource Dim.NavButtonInnerSize}" Height="{StaticResource Dim.NavButtonInnerSize}"
+                    Margin="{StaticResource Dim.NavButtonMargin}"
+                    BorderBrush="{StaticResource TransparentBrush}"
+                    Foreground="{StaticResource TextOnDarkBrush}"
+                    ToolTip="首页"
+                    Command="{Binding NavigateCommand}"
+                    CommandParameter="Home">
+                <Button.Style>
+                    <Style TargetType="Button">
+                        <Setter Property="Background" Value="{StaticResource TransparentBrush}"/>
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding ActiveRoute}" Value="Home">
+                                <Setter Property="Background" Value="{StaticResource PrimaryBrush}"/>
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </Button.Style>
+                <StackPanel HorizontalAlignment="Center">
+                    <TextBlock Text="🏠" FontSize="{StaticResource FontSize.Subtitle}" HorizontalAlignment="Center"/>
+                    <TextBlock Text="首页" FontSize="{StaticResource FontSize.NavLabel}" HorizontalAlignment="Center" Margin="{StaticResource Dim.NavLabelMargin}"/>
+                </StackPanel>
+            </Button>
+
+            <!-- 历史回顾 — NavigateCommand("History") -->
+            <Button Width="{StaticResource Dim.NavButtonInnerSize}" Height="{StaticResource Dim.NavButtonInnerSize}"
+                    Margin="{StaticResource Dim.NavButtonMargin}"
+                    BorderBrush="{StaticResource TransparentBrush}"
+                    Foreground="{StaticResource TextOnDarkBrush}"
+                    ToolTip="历史回顾"
+                    Command="{Binding NavigateCommand}"
+                    CommandParameter="History">
+                <Button.Style>
+                    <Style TargetType="Button">
+                        <Setter Property="Background" Value="{StaticResource TransparentBrush}"/>
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding ActiveRoute}" Value="History">
+                                <Setter Property="Background" Value="{StaticResource PrimaryBrush}"/>
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </Button.Style>
+                <StackPanel HorizontalAlignment="Center">
+                    <TextBlock Text="📋" FontSize="{StaticResource FontSize.Subtitle}" HorizontalAlignment="Center"/>
+                    <TextBlock Text="历史" FontSize="{StaticResource FontSize.NavLabel}" HorizontalAlignment="Center" Margin="{StaticResource Dim.NavLabelMargin}"/>
+                </StackPanel>
+            </Button>
+
+            <!-- 显示设置 — ShowDisplayDialogCommand -->
+            <Button Width="{StaticResource Dim.NavButtonInnerSize}" Height="{StaticResource Dim.NavButtonInnerSize}"
+                    Margin="{StaticResource Dim.NavButtonMargin}"
+                    BorderBrush="{StaticResource TransparentBrush}"
+                    Foreground="{StaticResource TextOnDarkBrush}"
+                    ToolTip="显示设置"
+                    Command="{Binding ShowDisplayDialogCommand}">
+                <Button.Style>
+                    <Style TargetType="Button">
+                        <Setter Property="Background" Value="{StaticResource TransparentBrush}"/>
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding ActiveRoute}" Value="Display">
+                                <Setter Property="Background" Value="{StaticResource PrimaryBrush}"/>
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </Button.Style>
+                <StackPanel HorizontalAlignment="Center">
+                    <TextBlock Text="🖥" FontSize="{StaticResource FontSize.Subtitle}" HorizontalAlignment="Center"/>
+                    <TextBlock Text="显示" FontSize="{StaticResource FontSize.NavLabel}" HorizontalAlignment="Center" Margin="{StaticResource Dim.NavLabelMargin}"/>
+                </StackPanel>
+            </Button>
+
+            <!-- 滤波设置 — ShowFilterDialogCommand -->
+            <Button Width="{StaticResource Dim.NavButtonInnerSize}" Height="{StaticResource Dim.NavButtonInnerSize}"
+                    Margin="{StaticResource Dim.NavButtonMargin}"
+                    BorderBrush="{StaticResource TransparentBrush}"
+                    Foreground="{StaticResource TextOnDarkBrush}"
+                    ToolTip="滤波设置"
+                    Command="{Binding ShowFilterDialogCommand}">
+                <Button.Style>
+                    <Style TargetType="Button">
+                        <Setter Property="Background" Value="{StaticResource TransparentBrush}"/>
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding ActiveRoute}" Value="Filter">
+                                <Setter Property="Background" Value="{StaticResource PrimaryBrush}"/>
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </Button.Style>
+                <StackPanel HorizontalAlignment="Center">
+                    <TextBlock Text="⚙" FontSize="{StaticResource FontSize.Subtitle}" HorizontalAlignment="Center"/>
+                    <TextBlock Text="滤波" FontSize="{StaticResource FontSize.NavLabel}" HorizontalAlignment="Center" Margin="{StaticResource Dim.NavLabelMargin}"/>
+                </StackPanel>
+            </Button>
+
+            <!-- 用户管理 — ShowUserManagementCommand -->
+            <Button Width="{StaticResource Dim.NavButtonInnerSize}" Height="{StaticResource Dim.NavButtonInnerSize}"
+                    Margin="{StaticResource Dim.NavButtonMargin}"
+                    BorderBrush="{StaticResource TransparentBrush}"
+                    Foreground="{StaticResource TextOnDarkBrush}"
+                    ToolTip="用户管理"
+                    Command="{Binding ShowUserManagementCommand}">
+                <Button.Style>
+                    <Style TargetType="Button">
+                        <Setter Property="Background" Value="{StaticResource TransparentBrush}"/>
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding ActiveRoute}" Value="User">
+                                <Setter Property="Background" Value="{StaticResource PrimaryBrush}"/>
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </Button.Style>
+                <StackPanel HorizontalAlignment="Center">
+                    <TextBlock Text="👤" FontSize="{StaticResource FontSize.Subtitle}" HorizontalAlignment="Center"/>
+                    <TextBlock Text="用户" FontSize="{StaticResource FontSize.NavLabel}" HorizontalAlignment="Center" Margin="{StaticResource Dim.NavLabelMargin}"/>
+                </StackPanel>
+            </Button>
+
+            <!-- 数据导出 — NavigateCommand("Export") -->
+            <Button Width="{StaticResource Dim.NavButtonInnerSize}" Height="{StaticResource Dim.NavButtonInnerSize}"
+                    Margin="{StaticResource Dim.NavButtonMargin}"
+                    BorderBrush="{StaticResource TransparentBrush}"
+                    Foreground="{StaticResource TextOnDarkBrush}"
+                    ToolTip="数据导出"
+                    Command="{Binding NavigateCommand}"
+                    CommandParameter="Export">
+                <Button.Style>
+                    <Style TargetType="Button">
+                        <Setter Property="Background" Value="{StaticResource TransparentBrush}"/>
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding ActiveRoute}" Value="Export">
+                                <Setter Property="Background" Value="{StaticResource PrimaryBrush}"/>
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </Button.Style>
+                <StackPanel HorizontalAlignment="Center">
+                    <TextBlock Text="💾" FontSize="{StaticResource FontSize.Subtitle}" HorizontalAlignment="Center"/>
+                    <TextBlock Text="导出" FontSize="{StaticResource FontSize.NavLabel}" HorizontalAlignment="Center" Margin="{StaticResource Dim.NavLabelMargin}"/>
+                </StackPanel>
+            </Button>
+
+            <!-- 关机 — RequestShutdownCommand -->
+            <Button Width="{StaticResource Dim.NavButtonInnerSize}" Height="{StaticResource Dim.NavButtonInnerSize}"
+                    Margin="{StaticResource Dim.NavButtonMargin}"
+                    BorderBrush="{StaticResource TransparentBrush}"
+                    Foreground="{StaticResource ErrorBrush}"
+                    ToolTip="关机"
+                    Command="{Binding RequestShutdownCommand}">
+                <Button.Style>
+                    <Style TargetType="Button">
+                        <Setter Property="Background" Value="{StaticResource TransparentBrush}"/>
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding ActiveRoute}" Value="Shutdown">
+                                <Setter Property="Background" Value="{StaticResource ErrorBrush}"/>
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </Button.Style>
+                <StackPanel HorizontalAlignment="Center">
+                    <TextBlock Text="⏻" FontSize="{StaticResource FontSize.Subtitle}" HorizontalAlignment="Center"/>
+                    <TextBlock Text="关机" FontSize="{StaticResource FontSize.NavLabel}" HorizontalAlignment="Center" Margin="{StaticResource Dim.NavLabelMargin}"/>
+                </StackPanel>
+            </Button>
+
+        </StackPanel>
+    </Border>
+
+</UserControl>

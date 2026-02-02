@@ -1,0 +1,26 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net9.0-windows</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <UseWindowsForms>true</UseWindowsForms>
+    <RootNamespace>Neo.Host</RootNamespace>
+    <ApplicationIcon></ApplicationIcon>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Core\Neo.Core.csproj" />
+    <ProjectReference Include="..\DataSources\Neo.DataSources.csproj" />
+    <ProjectReference Include="..\DSP\Neo.DSP.csproj" />
+    <ProjectReference Include="..\Infrastructure\Neo.Infrastructure.csproj" />
+    <ProjectReference Include="..\Mock\Neo.Mock.csproj" />
+    <ProjectReference Include="..\Rendering\Neo.Rendering.csproj" />
+    <ProjectReference Include="..\NIRS\Neo.NIRS.csproj" />
+    <ProjectReference Include="..\Video\Neo.Video.csproj" />
+    <ProjectReference Include="..\Playback\Neo.Playback.csproj" />
+    <ProjectReference Include="..\Storage\Neo.Storage.csproj" />
+  </ItemGroup>
+
+</Project>

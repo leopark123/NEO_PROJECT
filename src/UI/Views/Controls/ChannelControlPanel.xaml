@@ -1,0 +1,121 @@
+<UserControl x:Class="Neo.UI.Views.Controls.ChannelControlPanel"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <!-- Sprint 2.4: Extracted from MainWindow.xaml right parameter panel -->
+    <!-- RIGHT: PARAMETER CONTROL PANEL (150px) — UI_SPEC §4.1 col 3 -->
+    <!-- DataContext = WaveformViewModel (set by MainWindow binding) -->
+    <!-- All sizes/margins from Dimensions.xaml — zero hardcoded values -->
+
+    <Border Width="{StaticResource Dim.ParamPanelMinWidth}" MinWidth="{StaticResource Dim.ParamPanelMinWidth}"
+            Background="{StaticResource BackgroundBrush}"
+            BorderBrush="{StaticResource BorderBrush}"
+            BorderThickness="{StaticResource Dim.ParamBorderThickness}">
+        <StackPanel Margin="{StaticResource Dim.ParamPanelMargin}">
+
+            <!-- Lead selection — UI_SPEC §5.1 (通道组合切换) -->
+            <TextBlock Text="导联选择"
+                       Foreground="{StaticResource TextDarkSecondaryBrush}"
+                       FontSize="{StaticResource FontSize.StatusBar}"
+                       FontWeight="SemiBold"
+                       Margin="{StaticResource Dim.ParamLabelMargin}"/>
+            <TextBlock Text="{Binding LeadCh1}"
+                       Foreground="{StaticResource TextOnDarkBrush}"
+                       FontSize="{StaticResource FontSize.StatusBar}"
+                       Margin="{StaticResource Dim.ParamValueMargin}"/>
+            <TextBlock Text="{Binding LeadCh2}"
+                       Foreground="{StaticResource TextOnDarkBrush}"
+                       FontSize="{StaticResource FontSize.StatusBar}"
+                       Margin="{StaticResource Dim.ParamValueMargin}"/>
+
+            <Border Height="{StaticResource Dim.SeparatorHeight}"
+                    Background="{StaticResource BorderBrush}"
+                    Margin="{StaticResource Dim.ParamSeparatorMargin}"/>
+
+            <!-- Gain — UI_SPEC §6.1 -->
+            <TextBlock Text="增益"
+                       Foreground="{StaticResource TextDarkSecondaryBrush}"
+                       FontSize="{StaticResource FontSize.StatusBar}"
+                       FontWeight="SemiBold"
+                       Margin="{StaticResource Dim.ParamSectionMargin}"/>
+            <TextBlock Text="{Binding GainDisplay}"
+                       Foreground="{StaticResource TextOnDarkBrush}"
+                       FontSize="{StaticResource FontSize.ParamValue}"
+                       FontWeight="Bold"
+                       Margin="{StaticResource Dim.ParamValueMargin}"/>
+
+            <Border Height="{StaticResource Dim.SeparatorHeight}"
+                    Background="{StaticResource BorderBrush}"
+                    Margin="{StaticResource Dim.ParamSeparatorMargin}"/>
+
+            <!-- Y-axis range — UI_SPEC §5.1 -->
+            <TextBlock Text="Y轴范围"
+                       Foreground="{StaticResource TextDarkSecondaryBrush}"
+                       FontSize="{StaticResource FontSize.StatusBar}"
+                       FontWeight="SemiBold"
+                       Margin="{StaticResource Dim.ParamSectionMargin}"/>
+            <TextBlock Text="{Binding YAxisDisplay}"
+                       Foreground="{StaticResource TextOnDarkBrush}"
+                       FontSize="{StaticResource FontSize.ParamValue}"
+                       FontWeight="Bold"
+                       Margin="{StaticResource Dim.ParamValueMargin}"/>
+
+            <Border Height="{StaticResource Dim.SeparatorHeight}"
+                    Background="{StaticResource BorderBrush}"
+                    Margin="{StaticResource Dim.ParamSeparatorMargin}"/>
+
+            <!-- Filter params — UI_SPEC §6.2 -->
+            <TextBlock Text="滤波参数"
+                       Foreground="{StaticResource TextDarkSecondaryBrush}"
+                       FontSize="{StaticResource FontSize.StatusBar}"
+                       FontWeight="SemiBold"
+                       Margin="{StaticResource Dim.ParamSectionMargin}"/>
+            <TextBlock Text="{Binding HpfDisplay}"
+                       Foreground="{StaticResource TextOnDarkBrush}"
+                       FontSize="{StaticResource FontSize.StatusBar}"
+                       Margin="{StaticResource Dim.ParamValueMargin}"/>
+            <TextBlock Text="{Binding LpfDisplay}"
+                       Foreground="{StaticResource TextOnDarkBrush}"
+                       FontSize="{StaticResource FontSize.StatusBar}"
+                       Margin="{StaticResource Dim.ParamValueMargin}"/>
+            <TextBlock Text="{Binding NotchDisplay}"
+                       Foreground="{StaticResource TextOnDarkBrush}"
+                       FontSize="{StaticResource FontSize.StatusBar}"
+                       Margin="{StaticResource Dim.ParamValueMargin}"/>
+
+            <Border Height="{StaticResource Dim.SeparatorHeight}"
+                    Background="{StaticResource BorderBrush}"
+                    Margin="{StaticResource Dim.ParamSeparatorMargin}"/>
+
+            <!-- Sweep speed — UI_SPEC §5.1 -->
+            <TextBlock Text="扫描速度"
+                       Foreground="{StaticResource TextDarkSecondaryBrush}"
+                       FontSize="{StaticResource FontSize.StatusBar}"
+                       FontWeight="SemiBold"
+                       Margin="{StaticResource Dim.ParamSectionMargin}"/>
+            <TextBlock Text="{Binding SweepDisplay}"
+                       Foreground="{StaticResource TextOnDarkBrush}"
+                       FontSize="{StaticResource FontSize.ParamValue}"
+                       FontWeight="Bold"
+                       Margin="{StaticResource Dim.ParamValueMargin}"/>
+
+            <Border Height="{StaticResource Dim.SeparatorHeight}"
+                    Background="{StaticResource BorderBrush}"
+                    Margin="{StaticResource Dim.ParamSeparatorMargin}"/>
+
+            <!-- aEEG time window — UI_SPEC §5.2 -->
+            <TextBlock Text="aEEG 时间窗"
+                       Foreground="{StaticResource TextDarkSecondaryBrush}"
+                       FontSize="{StaticResource FontSize.StatusBar}"
+                       FontWeight="SemiBold"
+                       Margin="{StaticResource Dim.ParamSectionMargin}"/>
+            <TextBlock Text="{Binding AeegTimeDisplay}"
+                       Foreground="{StaticResource TextOnDarkBrush}"
+                       FontSize="{StaticResource FontSize.ParamValue}"
+                       FontWeight="Bold"
+                       Margin="{StaticResource Dim.ParamValueMargin}"/>
+
+        </StackPanel>
+    </Border>
+
+</UserControl>

@@ -1,0 +1,64 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <!-- ================================================================ -->
+    <!-- Sprint 1.3: Toggle switch style (CheckBox-based)                 -->
+    <!-- Source: NEO_UI_Development_Plan_WPF.md §5.2                      -->
+    <!-- Size: 50×26px, track: off=SurfaceDark on=Success, thumb: white   -->
+    <!-- ================================================================ -->
+
+    <Style x:Key="ToggleSwitchStyle" TargetType="CheckBox">
+        <Setter Property="Width"   Value="{StaticResource Dim.ToggleWidth}"/>
+        <Setter Property="Height"  Value="{StaticResource Dim.ToggleHeight}"/>
+        <Setter Property="Cursor"  Value="Hand"/>
+        <Setter Property="SnapsToDevicePixels" Value="True"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="CheckBox">
+                    <Grid>
+                        <!-- Track -->
+                        <Border x:Name="track"
+                                Width="{StaticResource Dim.ToggleWidth}"
+                                Height="{StaticResource Dim.ToggleHeight}"
+                                CornerRadius="{StaticResource Dim.ToggleTrackRadius}"
+                                Background="{StaticResource SurfaceDarkBrush}"
+                                SnapsToDevicePixels="True"/>
+                        <!-- Thumb -->
+                        <Border x:Name="thumb"
+                                Width="{StaticResource Dim.ToggleThumbSize}"
+                                Height="{StaticResource Dim.ToggleThumbSize}"
+                                CornerRadius="{StaticResource Dim.ToggleThumbRadius}"
+                                Background="{StaticResource InputBackgroundBrush}"
+                                HorizontalAlignment="Left"
+                                Margin="{StaticResource Dim.ToggleThumbMarginOff}"
+                                VerticalAlignment="Center"
+                                SnapsToDevicePixels="True">
+                            <Border.Effect>
+                                <DropShadowEffect ShadowDepth="{StaticResource Dim.ShadowDepth}"
+                                                  BlurRadius="{StaticResource Dim.ShadowBlurRadius}"
+                                                  Opacity="{StaticResource Dim.ShadowOpacity}"
+                                                  Color="{StaticResource Color.Shadow}"/>
+                            </Border.Effect>
+                        </Border>
+                    </Grid>
+                    <ControlTemplate.Triggers>
+                        <!-- Checked → green track, thumb slides right -->
+                        <Trigger Property="IsChecked" Value="True">
+                            <Setter TargetName="track" Property="Background"
+                                    Value="{StaticResource SuccessBrush}"/>
+                            <Setter TargetName="thumb" Property="HorizontalAlignment"
+                                    Value="Right"/>
+                            <Setter TargetName="thumb" Property="Margin"
+                                    Value="{StaticResource Dim.ToggleThumbMarginOn}"/>
+                        </Trigger>
+                        <!-- Disabled → 50% opacity per Dev Plan §7.3 -->
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter Property="Opacity" Value="0.5"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+</ResourceDictionary>

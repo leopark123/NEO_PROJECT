@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(dotnet restore:*)",
+      "Bash(dotnet build:*)",
+      "Bash(dotnet test:*)",
+      "Bash(timeout 5 dotnet run:*)",
+      "Bash(handle PROJECT_STATE.md)",
+      "Bash(python3:*)",
+      "Bash(taskkill:*)"
+    ]
+  }
+}

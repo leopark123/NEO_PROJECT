@@ -1,0 +1,107 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:sys="clr-namespace:System;assembly=mscorlib">
+
+    <!-- ================================================================ -->
+    <!-- Sprint 1.3: Layout dimension constants                           -->
+    <!-- Source: UI_SPEC.md §4.2 (frozen), §13 (touch)                   -->
+    <!-- ================================================================ -->
+
+    <!-- ── Fixed layout sizes (UI_SPEC §4.2) ── -->
+    <sys:Double x:Key="Dim.ToolbarHeight">60</sys:Double>
+    <sys:Double x:Key="Dim.NavigationWidth">60</sys:Double>
+    <sys:Double x:Key="Dim.StatusBarHeight">30</sys:Double>
+    <sys:Double x:Key="Dim.RightPanelWidth">300</sys:Double>
+
+    <!-- ── Touch minimum (UI_SPEC §13) ── -->
+    <sys:Double x:Key="Dim.TouchMinSize">44</sys:Double>
+
+    <!-- ── Right param panel minimum (UI_SPEC §4.2) ── -->
+    <sys:Double x:Key="Dim.ParamPanelMinWidth">150</sys:Double>
+
+    <!-- ── Spacing (Dev Plan §7.2) ── -->
+    <sys:Double x:Key="Dim.ButtonSpacing">8</sys:Double>
+    <sys:Double x:Key="Dim.FormItemSpacing">16</sys:Double>
+    <sys:Double x:Key="Dim.PanelPadding">12</sys:Double>
+
+    <!-- ── Control sizes (Dev Plan §5/§7) ── -->
+    <sys:Double x:Key="Dim.ControlHeight">44</sys:Double>
+    <sys:Double x:Key="Dim.CornerRadius">4</sys:Double>
+    <sys:Double x:Key="Dim.ToggleWidth">50</sys:Double>
+    <sys:Double x:Key="Dim.ToggleHeight">26</sys:Double>
+    <sys:Double x:Key="Dim.NavButtonSize">60</sys:Double>
+    <sys:Double x:Key="Dim.ComboBoxItemHeight">40</sys:Double>
+    <sys:Double x:Key="Dim.ListItemHeight">48</sys:Double>
+    <sys:Double x:Key="Dim.SeekBarThumbSize">20</sys:Double>
+    <sys:Double x:Key="Dim.ToggleThumbSize">22</sys:Double>
+    <sys:Double x:Key="Dim.ToggleTrackRadius">13</sys:Double>
+    <sys:Double x:Key="Dim.ToggleThumbRadius">11</sys:Double>
+    <sys:Double x:Key="Dim.ComboBoxArrowWidth">30</sys:Double>
+
+    <!-- ── Button sizes ── -->
+    <sys:Double x:Key="Dim.ButtonMinWidth">120</sys:Double>
+
+    <!-- ── Toolbar layout (Sprint 2.1) ── -->
+    <sys:Double x:Key="Dim.LogoSize">36</sys:Double>
+    <sys:Double x:Key="Dim.CornerRadiusSmall">3</sys:Double>
+    <Thickness x:Key="Dim.ToolbarBorderThickness">0,0,0,1</Thickness>
+    <Thickness x:Key="Dim.LogoAreaMargin">8,0</Thickness>
+    <Thickness x:Key="Dim.LogoBoxMargin">0,0,8,0</Thickness>
+    <Thickness x:Key="Dim.SeekBarMargin">16,14</Thickness>
+    <Thickness x:Key="Dim.SeekBarTextPadding">0,4</Thickness>
+    <Thickness x:Key="Dim.ToolbarButtonBorderThickness">1</Thickness>
+    <Thickness x:Key="Dim.TimeDisplayMargin">12,0</Thickness>
+    <Thickness x:Key="Dim.ToolbarUserMargin">8,0</Thickness>
+    <Thickness x:Key="Dim.BedBorderMargin">8,0,12,0</Thickness>
+    <Thickness x:Key="Dim.BedBorderPadding">8,4</Thickness>
+    <CornerRadius x:Key="Dim.CornerRadiusSmallAll">3</CornerRadius>
+
+    <!-- ── StatusBarPanel layout (Sprint 2.3) ── -->
+    <Thickness x:Key="Dim.StatusBarBorderThickness">0,1,0,0</Thickness>
+    <Thickness x:Key="Dim.StatusBarGridMargin">8,0</Thickness>
+    <Thickness x:Key="Dim.StatusItemMargin">0,0,16,0</Thickness>
+    <sys:Double x:Key="Dim.DeviceIndicatorSize">10</sys:Double>
+    <Thickness x:Key="Dim.DeviceGroupMargin">0,0,12,0</Thickness>
+    <Thickness x:Key="Dim.DeviceLabelMargin">0,0,3,0</Thickness>
+
+    <!-- ── ChannelControlPanel layout (Sprint 2.4) ── -->
+    <Thickness x:Key="Dim.ParamPanelMargin">8,12</Thickness>
+    <Thickness x:Key="Dim.ParamLabelMargin">0,0,0,4</Thickness>
+    <Thickness x:Key="Dim.ParamValueMargin">0,2</Thickness>
+    <Thickness x:Key="Dim.ParamSectionMargin">0,8,0,4</Thickness>
+    <Thickness x:Key="Dim.ParamSeparatorMargin">0,10</Thickness>
+    <Thickness x:Key="Dim.ParamBorderThickness">1,0,0,0</Thickness>
+
+    <!-- ── NavPanel layout (Sprint 2.2) ── -->
+    <sys:Double x:Key="Dim.NavButtonInnerSize">48</sys:Double>
+    <Thickness x:Key="Dim.NavBorderThickness">0,0,1,0</Thickness>
+    <Thickness x:Key="Dim.NavStackMargin">0,8,0,0</Thickness>
+    <Thickness x:Key="Dim.NavButtonMargin">6,4</Thickness>
+    <Thickness x:Key="Dim.NavLabelMargin">0,1,0,0</Thickness>
+
+    <!-- ── CornerRadius resources ── -->
+    <CornerRadius x:Key="Dim.CornerRadiusAll">4</CornerRadius>
+    <CornerRadius x:Key="Dim.CornerRadiusBottom">0,0,4,4</CornerRadius>
+
+    <!-- ── Thickness / Padding resources ── -->
+    <Thickness x:Key="Dim.PanelPaddingThickness">12</Thickness>
+    <Thickness x:Key="Dim.FormItemMargin">0,0,0,16</Thickness>
+    <Thickness x:Key="Dim.ButtonSpacingMargin">4,0</Thickness>
+    <Thickness x:Key="Dim.ButtonPadding">24,12</Thickness>
+    <Thickness x:Key="Dim.InputPadding">12,10</Thickness>
+    <Thickness x:Key="Dim.DefaultButtonPadding">16,10</Thickness>
+    <Thickness x:Key="Dim.ToggleItemPadding">12,8</Thickness>
+    <Thickness x:Key="Dim.ComboBoxContentMargin">14,0,30,0</Thickness>
+    <Thickness x:Key="Dim.SeparatorMargin">0,8</Thickness>
+    <Thickness x:Key="Dim.ToggleThumbMarginOff">2,0,0,0</Thickness>
+    <Thickness x:Key="Dim.ToggleThumbMarginOn">0,0,2,0</Thickness>
+
+    <!-- ── Scalar sizes (non-layout) ── -->
+    <sys:Double x:Key="Dim.SeparatorHeight">1</sys:Double>
+    <sys:Double x:Key="Dim.BorderThicknessThin">1</sys:Double>
+    <sys:Double x:Key="Dim.BorderThicknessFocus">2</sys:Double>
+    <sys:Double x:Key="Dim.ShadowDepth">1</sys:Double>
+    <sys:Double x:Key="Dim.ShadowBlurRadius">2</sys:Double>
+    <sys:Double x:Key="Dim.ShadowOpacity">0.3</sys:Double>
+
+</ResourceDictionary>

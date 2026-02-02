@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net9.0-windows</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <RootNamespace>Neo.DataSources</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="System.IO.Ports" Version="9.0.0" Condition="Exists('$(NuGetPackageRoot)\system.io.ports')" />
+    <Reference Include="System.IO.Ports"
+               Condition="!Exists('$(NuGetPackageRoot)\system.io.ports')"
+               HintPath="$(MSBuildProgramFiles32)\Microsoft SDKs\UWPNuGetPackages\microsoft.netcore.universalwindowsplatform\6.2.14\ref\uap10.0.15138\System.IO.Ports.dll" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Core\Neo.Core.csproj" />
+    <ProjectReference Include="..\Storage\Neo.Storage.csproj" />
+  </ItemGroup>
+
+</Project>
