@@ -114,7 +114,7 @@ public static class DpiHelper
     /// <returns>像素值（四舍五入）。</returns>
     public static int DipToPixelRound(double dip, double dpi)
     {
-        return (int)Math.Round(DipToPixel(dip, dpi));
+        return (int)Math.Round(DipToPixel(dip, dpi), MidpointRounding.AwayFromZero);
     }
 
     #region Native Methods

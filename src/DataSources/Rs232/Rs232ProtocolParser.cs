@@ -270,10 +270,12 @@ public sealed class EegProtocolParser
 /// </remarks>
 public sealed class NirsProtocolParser
 {
+#pragma warning disable CS0067 // Reserved for future NIRS protocol implementation.
     /// <summary>
     /// 解析完成事件。
     /// </summary>
     public event Action<NirsSample>? PacketParsed;
+#pragma warning restore CS0067 // Reserved for future NIRS protocol implementation.
 
     /// <summary>
     /// 处理接收到的字节流。

@@ -8,10 +8,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="System.IO.Ports" Version="9.0.0" Condition="Exists('$(NuGetPackageRoot)\system.io.ports')" />
-    <Reference Include="System.IO.Ports"
-               Condition="!Exists('$(NuGetPackageRoot)\system.io.ports')"
-               HintPath="$(MSBuildProgramFiles32)\Microsoft SDKs\UWPNuGetPackages\microsoft.netcore.universalwindowsplatform\6.2.14\ref\uap10.0.15138\System.IO.Ports.dll" />
+    <PackageReference Include="System.IO.Ports" Version="9.0.0" />
   </ItemGroup>
 
   <ItemGroup>

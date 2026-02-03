@@ -1,0 +1,6 @@
+<Project>
+  <PropertyGroup>
+    <!-- Disable NuGet audit to avoid NU1900 when audit feed is unreachable. -->
+    <NuGetAudit>false</NuGetAudit>
+  </PropertyGroup>
+</Project>

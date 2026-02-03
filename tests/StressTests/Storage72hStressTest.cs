@@ -240,7 +240,8 @@ public class Storage72hStressTest : IDisposable
         int totalReaperDeleted = reaper.TotalDeletedChunks;
         long totalReaperFreed = reaper.TotalFreedBytes;
 
-        using var q = conn.CreateCommand();
+        using var readConn = db.CreateReadConnection();
+        using var q = readConn.CreateCommand();
 
         // Total remaining chunks
         q.CommandText = "SELECT COUNT(*) FROM eeg_chunks;";
@@ -290,7 +291,7 @@ public class Storage72hStressTest : IDisposable
         long cleanupAuditEntries = Convert.ToInt64(q.ExecuteScalar());
 
         // ── P2 fix: Verify deletion targeted oldest chunks ──
-        long earliestTsAfter = QueryEarliestChunkTimestamp(conn);
+        long earliestTsAfter = QueryEarliestChunkTimestamp(readConn);
         bool deletionShiftedEarliest = (totalReaperDeleted > 0) && (earliestTsAfter > earliestTsBefore);
 
         // ── P2 fix: Verify active session time continuity (no gaps) ──

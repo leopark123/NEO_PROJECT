@@ -155,7 +155,7 @@ public sealed class ResourceCache : IDisposable
         return _textFormats.GetOrAdd(key, k =>
             _writeFactory.CreateTextFormat(
                 k.FontFamily,
-                fontCollection: null,
+                fontCollection: null!,
                 k.Weight,
                 k.Style,
                 FontStretch.Normal,

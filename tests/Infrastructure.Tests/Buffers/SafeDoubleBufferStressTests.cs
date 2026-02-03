@@ -12,7 +12,7 @@ namespace Neo.Infrastructure.Tests.Buffers;
 public sealed class SafeDoubleBufferStressTests
 {
     [Fact]
-    public void StressTest_ConcurrentReadWrite_NoException()
+    public async Task StressTest_ConcurrentReadWrite_NoException()
     {
         // Arrange
         var buffer = new SafeDoubleBuffer<int>(1000);
@@ -49,13 +49,13 @@ public sealed class SafeDoubleBufferStressTests
         });
 
         // Assert
-        Task.WaitAll(producer, consumer);
+        await Task.WhenAll(producer, consumer);
         Assert.Equal(targetWrites, writeCount);
         Assert.True(readCount > 0);
     }
 
     [Fact]
-    public void StressTest_HighFrequencyWrite_NoDataLoss()
+    public async Task StressTest_HighFrequencyWrite_NoDataLoss()
     {
         // Arrange
         var buffer = new SafeDoubleBuffer<long>(1000);
@@ -97,9 +97,9 @@ public sealed class SafeDoubleBufferStressTests
             }
         });
 
-        producer.Wait();
+        await producer;
         Thread.Sleep(100); // Give consumer time to catch up
-        consumer.Wait(1000);
+        await Task.WhenAny(consumer, Task.Delay(1000));
 
         // Assert - no out of order reads
         Assert.Equal(0, outOfOrderCount);
@@ -107,7 +107,7 @@ public sealed class SafeDoubleBufferStressTests
     }
 
     [Fact]
-    public void StressTest_VersionAlwaysIncreases()
+    public async Task StressTest_VersionAlwaysIncreases()
     {
         // Arrange
         var buffer = new SafeDoubleBuffer<int>(100);
@@ -139,7 +139,7 @@ public sealed class SafeDoubleBufferStressTests
             }
         });
 
-        Task.WaitAll(producer, consumer);
+        await Task.WhenAll(producer, consumer);
 
         // Assert
         Assert.False(versionDecreased);
@@ -147,53 +147,63 @@ public sealed class SafeDoubleBufferStressTests
     }
 
     [Fact]
-    public void StressTest_MultipleConsumers_NoException()
+    public async Task StressTest_MultipleConsumers_NoException()
     {
         // Arrange
         var buffer = new SafeDoubleBuffer<int>(1000);
         const int totalWrites = 1000;
         int consumer1Reads = 0;
         int consumer2Reads = 0;
+        var startGate = new ManualResetEventSlim(false);
+        var producerDone = false;
 
         // Act
         var producer = Task.Run(() =>
         {
+            startGate.Wait();
             for (int i = 0; i < totalWrites; i++)
             {
                 var span = buffer.AcquireWriteBuffer();
                 span[0] = i;
                 buffer.Publish(1, i);
             }
+            Volatile.Write(ref producerDone, true);
         });
 
         var consumer1 = Task.Run(() =>
         {
             int lastVersion = -1;
-            while (buffer.Version < totalWrites)
+            startGate.Wait();
+            while (!Volatile.Read(ref producerDone) || Volatile.Read(ref consumer1Reads) == 0)
             {
                 if (buffer.TryGetSnapshot(lastVersion, out var snapshot))
                 {
                     lastVersion = snapshot.Version;
                     Interlocked.Increment(ref consumer1Reads);
                 }
+                Thread.Yield();
             }
         });
 
         var consumer2 = Task.Run(() =>
         {
             int lastVersion = -1;
-            while (buffer.Version < totalWrites)
+            startGate.Wait();
+            while (!Volatile.Read(ref producerDone) || Volatile.Read(ref consumer2Reads) == 0)
             {
                 if (buffer.TryGetSnapshot(lastVersion, out var snapshot))
                 {
                     lastVersion = snapshot.Version;
                     Interlocked.Increment(ref consumer2Reads);
                 }
+                Thread.Yield();
             }
         });
 
+        startGate.Set();
+
         // Assert - should complete without exception
-        Task.WaitAll(producer, consumer1, consumer2);
+        await Task.WhenAll(producer, consumer1, consumer2);
         Assert.True(consumer1Reads > 0);
         Assert.True(consumer2Reads > 0);
     }

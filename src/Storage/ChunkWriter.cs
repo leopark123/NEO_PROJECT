@@ -33,6 +33,7 @@ public sealed class ChunkWriter : IDisposable
     private Thread? _writerThread;
     private volatile bool _stopRequested;
     private bool _disposed;
+    private int _drainInProgress;
 
     // Prepared statements
     private SqliteCommand? _insertEegCmd;
@@ -239,6 +240,11 @@ public sealed class ChunkWriter : IDisposable
     /// </summary>
     private void DrainQueues()
     {
+        if (Interlocked.Exchange(ref _drainInProgress, 1) == 1)
+            return;
+
+        try
+        {
         if (_eegQueue.IsEmpty)
             return;
 
@@ -295,6 +301,11 @@ public sealed class ChunkWriter : IDisposable
         // 检查容量并触发清理（在事务完全释放后执行）
         if (eegCount > 0)
             _reaper.CheckAndCleanup();
+        }
+        finally
+        {
+            Interlocked.Exchange(ref _drainInProgress, 0);
+        }
     }
 
     public void Dispose()

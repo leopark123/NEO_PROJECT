@@ -276,7 +276,6 @@ public sealed class Rs232NirsSource : ITimeSeriesSource<NirsSample>, IDisposable
 {
     private readonly Rs232Config _config;
     private readonly NirsProtocolParser _parser;
-    private volatile bool _isRunning;
     private bool _disposed;
 
     /// <summary>
@@ -327,7 +326,6 @@ public sealed class Rs232NirsSource : ITimeSeriesSource<NirsSample>, IDisposable
     /// </summary>
     public void Stop()
     {
-        _isRunning = false;
         _parser.Reset();
     }
 

@@ -197,7 +197,7 @@ public sealed class UsbExportService
     /// <summary>
     /// 安全复制文件到目标目录。同名文件自动追加序号。
     /// </summary>
-    private static ExportResult CopyFileToTarget(string sourceFilePath, string targetDir)
+    private ExportResult CopyFileToTarget(string sourceFilePath, string targetDir)
     {
         try
         {

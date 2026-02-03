@@ -2,6 +2,7 @@
 // 无锁双缓冲 - 来源: ARCHITECTURE.md §3, ADR-007
 
 using System.Runtime.CompilerServices;
+using System.Threading;
 
 namespace Neo.Infrastructure.Buffers;
 
@@ -30,9 +31,9 @@ public sealed class SafeDoubleBuffer<T> where T : struct
     private readonly int _capacity;
 
     // 原子状态
-    private volatile int _publishedIndex;    // 0 = A, 1 = B
-    private volatile int _version;
-    private volatile int _publishedCount;
+    private int _publishedIndex;    // 0 = A, 1 = B
+    private int _version;
+    private int _publishedCount;
     private long _publishedTimestamp;  // 使用 Interlocked/Volatile 访问
 
     // 写入状态（仅生产者线程访问）
@@ -47,7 +48,7 @@ public sealed class SafeDoubleBuffer<T> where T : struct
     /// <summary>
     /// 当前版本号。
     /// </summary>
-    public int Version => _version;
+    public int Version => Volatile.Read(ref _version);
 
     /// <summary>
     /// 创建 SafeDoubleBuffer 实例。
@@ -100,11 +101,11 @@ public sealed class SafeDoubleBuffer<T> where T : struct
 
         // 更新发布状态
         Interlocked.Exchange(ref _publishedTimestamp, timestampUs);
-        Interlocked.Exchange(ref _publishedCount, count);
+        Volatile.Write(ref _publishedCount, count);
 
         // 原子交换索引：发布当前写入缓冲区
         int newPublished = _writeIndex;
-        Interlocked.Exchange(ref _publishedIndex, newPublished);
+        Volatile.Write(ref _publishedIndex, newPublished);
 
         // 切换写入目标
         _writeIndex = newPublished == 0 ? 1 : 0;
@@ -127,7 +128,7 @@ public sealed class SafeDoubleBuffer<T> where T : struct
         // 读取发布状态（原子读取）
         int publishedIndex = Volatile.Read(ref _publishedIndex);
         int count = Volatile.Read(ref _publishedCount);
-        long timestamp = Volatile.Read(ref _publishedTimestamp);
+        long timestamp = Interlocked.Read(ref _publishedTimestamp);
         int version = Volatile.Read(ref _version);
 
         var buffer = publishedIndex == 0 ? _bufferA : _bufferB;
@@ -143,15 +144,36 @@ public sealed class SafeDoubleBuffer<T> where T : struct
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public bool TryGetSnapshot(int lastVersion, out BufferSnapshot<T> snapshot)
     {
-        int currentVersion = Volatile.Read(ref _version);
-        if (currentVersion == lastVersion)
+        for (int attempt = 0; attempt < 3; attempt++)
         {
-            snapshot = default;
-            return false;
+            int versionStart = Volatile.Read(ref _version);
+            if (versionStart == lastVersion)
+            {
+                snapshot = default;
+                return false;
+            }
+
+            int count = Volatile.Read(ref _publishedCount);
+            int publishedIndex = Volatile.Read(ref _publishedIndex);
+            long timestamp = Interlocked.Read(ref _publishedTimestamp);
+            int versionEnd = Volatile.Read(ref _version);
+
+            if (versionStart != versionEnd)
+                continue; // Writer updated during read; retry for a consistent snapshot.
+
+            if (count == 0)
+            {
+                snapshot = default;
+                return false;
+            }
+
+            var buffer = publishedIndex == 0 ? _bufferA : _bufferB;
+            snapshot = new BufferSnapshot<T>(buffer, count, timestamp, versionEnd);
+            return true;
         }
 
-        snapshot = GetSnapshot();
-        return true;
+        snapshot = default;
+        return false;
     }
 
     /// <summary>

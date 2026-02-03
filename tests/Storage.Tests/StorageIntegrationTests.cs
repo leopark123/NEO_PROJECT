@@ -270,7 +270,7 @@ public class StorageIntegrationTests : IDisposable
     }
 
     [Fact]
-    public void ConcurrentReadWrite_NoDeadlock()
+    public async Task ConcurrentReadWrite_NoDeadlock()
     {
         using var db = new NeoDatabase(_config);
         db.Initialize();
@@ -306,8 +306,9 @@ public class StorageIntegrationTests : IDisposable
         });
 
         // Both should complete without deadlock (timeout = 10s)
-        Assert.True(Task.WaitAll([writeTask, readTask], TimeSpan.FromSeconds(10)),
-            "Concurrent read/write timed out - possible deadlock");
+        var timeout = Task.Delay(TimeSpan.FromSeconds(10));
+        var completed = await Task.WhenAny(Task.WhenAll(writeTask, readTask), timeout);
+        Assert.True(completed != timeout, "Concurrent read/write timed out - possible deadlock");
 
         writer.Stop();
     }
