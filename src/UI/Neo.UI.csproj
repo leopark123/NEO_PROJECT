@@ -20,6 +20,10 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Core\Neo.Core.csproj" />
+    <ProjectReference Include="..\Rendering\Neo.Rendering.csproj" />
+    <ProjectReference Include="..\DSP\Neo.DSP.csproj" />
+    <ProjectReference Include="..\Playback\Neo.Playback.csproj" />
+    <ProjectReference Include="..\Mock\Neo.Mock.csproj" />
   </ItemGroup>
 
 </Project>

@@ -1,15 +1,13 @@
 // D3DImageRenderer.cs
-// Sprint 1.4: D3D11 + D2D rendering pipeline for WPF integration.
+// Sprint 1.4 / Sprint 3.1: D3D11 + D2D rendering pipeline for WPF integration.
 //
 // Source: NEO_UI_Development_Plan_WPF.md §8
 // CHARTER: R-01 render callback O(1), R-03 no per-frame resource creation
 //
-// Pipeline: D3D11 → D2D1 → Staging Texture → WriteableBitmap → WPF Image
+// Pipeline: D3D11 → D2D1DeviceContext → Staging Texture → WriteableBitmap → WPF Image
 //
-// Note: The original D3D9Ex bridge approach (D3D11 → D3D9 shared surface → D3DImage)
-// had alpha compositing issues on some drivers. This version uses CPU-side pixel copy
-// via a staging texture, which is reliable across all hardware. The per-frame copy
-// cost is negligible for the target resolution (~1ms for 1920x1080 BGRA).
+// Sprint 3.1: Upgraded to ID2D1DeviceContext (from ID2D1RenderTarget) for
+// compatibility with Neo.Rendering engine's LayeredRenderer and ResourceCache.
 //
 // This class contains NO business logic, NO medical semantics.
 
@@ -36,9 +34,11 @@ public sealed class D3DImageRenderer : IDisposable
     private ID3D11Texture2D? _renderTexture;
     private ID3D11Texture2D? _stagingTexture;
 
-    // ── D2D ──
-    private ID2D1Factory? _d2dFactory;
-    private ID2D1RenderTarget? _d2dTarget;
+    // ── D2D (Sprint 3.1: DeviceContext instead of RenderTarget) ──
+    private ID2D1Factory1? _d2dFactory;
+    private ID2D1Device? _d2dDevice;
+    private ID2D1DeviceContext? _d2dContext;
+    private ID2D1Bitmap1? _d2dBitmap;
     private ID2D1SolidColorBrush? _clearBrush;
     private ID2D1SolidColorBrush? _testBrush;
 
@@ -54,8 +54,8 @@ public sealed class D3DImageRenderer : IDisposable
     /// <summary>WPF ImageSource backed by WriteableBitmap.</summary>
     public ImageSource? ImageSource => _writeableBitmap;
 
-    /// <summary>D2D1 RenderTarget for drawing operations.</summary>
-    public ID2D1RenderTarget? RenderTarget => _d2dTarget;
+    /// <summary>D2D1 DeviceContext for drawing operations (Sprint 3.1).</summary>
+    public ID2D1DeviceContext? DeviceContext => _d2dContext;
 
     /// <summary>Current back buffer width in pixels.</summary>
     public int Width => _width;
@@ -64,13 +64,13 @@ public sealed class D3DImageRenderer : IDisposable
     public int Height => _height;
 
     /// <summary>True if device was successfully initialized.</summary>
-    public bool IsDeviceReady => _device != null && _d2dFactory != null;
+    public bool IsDeviceReady => _device != null && _d2dFactory != null && _d2dDevice != null;
 
-    /// <summary>True if rendering resources (texture, D2D target) are ready.</summary>
-    public bool IsRenderReady => _d2dTarget != null && _stagingTexture != null && _writeableBitmap != null;
+    /// <summary>True if rendering resources (texture, D2D context) are ready.</summary>
+    public bool IsRenderReady => _d2dContext != null && _stagingTexture != null && _writeableBitmap != null;
 
     /// <summary>
-    /// Initializes D3D11 device and D2D factory.
+    /// Initializes D3D11 device and D2D factory/device.
     /// Does NOT create render resources — call <see cref="Resize"/> first.
     /// </summary>
     public D3DImageRenderer()
@@ -93,16 +93,20 @@ public sealed class D3DImageRenderer : IDisposable
             out _device,
             out _context);
 
-        // D2D1 factory (single-threaded, created once)
-        _d2dFactory = D2D1.D2D1CreateFactory<ID2D1Factory>();
+        // D2D1 factory (Sprint 3.1: use Factory1 for DeviceContext support)
+        _d2dFactory = D2D1.D2D1CreateFactory<ID2D1Factory1>();
+
+        // Create D2D1 device from DXGI device
+        using var dxgiDevice = _device!.QueryInterface<IDXGIDevice>();
+        _d2dDevice = _d2dFactory.CreateDevice(dxgiDevice);
     }
 
     // ═══════════════════════════════════════════════════════════════════
-    // Resize — recreate render texture + staging + D2D target + bitmap
+    // Resize — recreate render texture + staging + D2D context + bitmap
     // ═══════════════════════════════════════════════════════════════════
 
     /// <summary>
-    /// Recreates the render texture, staging texture, D2D render target, and
+    /// Recreates the render texture, staging texture, D2D device context, and
     /// WriteableBitmap for the given size.
     /// Safe to call multiple times; releases old resources before creating new ones.
     /// </summary>
@@ -146,20 +150,22 @@ public sealed class D3DImageRenderer : IDisposable
         };
         _stagingTexture = _device!.CreateTexture2D(stagingDesc);
 
-        // 3. Create D2D1 render target from DXGI surface
+        // 3. Create D2D1 DeviceContext (Sprint 3.1: replaces RenderTarget)
+        _d2dContext = _d2dDevice!.CreateDeviceContext(DeviceContextOptions.None);
+
+        // 4. Create D2D1 Bitmap from DXGI surface and set as target
         using var dxgiSurface = _renderTexture.QueryInterface<IDXGISurface>();
-        var rtProps = new RenderTargetProperties(
-            RenderTargetType.Default,
+        var bitmapProps = new BitmapProperties1(
             new Vortice.DCommon.PixelFormat(Format.B8G8R8A8_UNorm, Vortice.DCommon.AlphaMode.Premultiplied),
             96f, 96f,
-            RenderTargetUsage.None,
-            Vortice.Direct2D1.FeatureLevel.Default);
-        _d2dTarget = _d2dFactory!.CreateDxgiSurfaceRenderTarget(dxgiSurface, rtProps);
+            BitmapOptions.Target | BitmapOptions.CannotDraw);
+        _d2dBitmap = _d2dContext.CreateBitmapFromDxgiSurface(dxgiSurface, bitmapProps);
+        _d2dContext.Target = _d2dBitmap;
 
-        // 4. Create reusable brushes (NOT per-frame — CHARTER R-03)
+        // 5. Create reusable brushes (NOT per-frame — CHARTER R-03)
         CreateBrushes();
 
-        // 5. Create WriteableBitmap (WPF-side pixel buffer)
+        // 6. Create WriteableBitmap (WPF-side pixel buffer)
         _writeableBitmap = new WriteableBitmap(width, height, 96, 96, PixelFormats.Bgra32, null);
     }
 
@@ -174,12 +180,12 @@ public sealed class D3DImageRenderer : IDisposable
     /// <returns>True if rendering can proceed; false if resources are not ready.</returns>
     public bool BeginRender()
     {
-        if (_disposed || _d2dTarget == null || _clearBrush == null) return false;
+        if (_disposed || _d2dContext == null || _clearBrush == null) return false;
 
-        _d2dTarget.BeginDraw();
+        _d2dContext.BeginDraw();
 
         // Clear with background color from Colors.xaml (CHARTER R-01: O(1) operation)
-        _d2dTarget.Clear(new Color4(
+        _d2dContext.Clear(new Color4(
             _clearBrush!.Color.R,
             _clearBrush.Color.G,
             _clearBrush.Color.B,
@@ -194,10 +200,10 @@ public sealed class D3DImageRenderer : IDisposable
     /// </summary>
     public void EndRender()
     {
-        if (!_isRendering || _d2dTarget == null || _context == null) return;
+        if (!_isRendering || _d2dContext == null || _context == null) return;
         if (_renderTexture == null || _stagingTexture == null || _writeableBitmap == null) return;
 
-        _d2dTarget.EndDraw();
+        _d2dContext.EndDraw();
         _context.Flush();
 
         // Copy GPU render texture → CPU staging texture
@@ -249,7 +255,7 @@ public sealed class D3DImageRenderer : IDisposable
     /// </summary>
     public void DrawTestRect()
     {
-        if (_d2dTarget == null || _testBrush == null) return;
+        if (_d2dContext == null || _testBrush == null) return;
         if (_width <= 0 || _height <= 0) return;
 
         // Draw a centered rectangle — O(1) operation
@@ -259,10 +265,10 @@ public sealed class D3DImageRenderer : IDisposable
         float y = (_height - rectH) / 2f;
 
         var rect = new Vortice.Mathematics.Rect(x, y, rectW, rectH);
-        _d2dTarget.FillRectangle(rect, _testBrush);
+        _d2dContext.FillRectangle(rect, _testBrush);
 
         // Draw border outline
-        _d2dTarget.DrawRectangle(rect, _testBrush, 2f);
+        _d2dContext.DrawRectangle(rect, _testBrush, 2f);
     }
 
     // ═══════════════════════════════════════════════════════════════════
@@ -309,7 +315,7 @@ public sealed class D3DImageRenderer : IDisposable
 
     private void CreateBrushes()
     {
-        if (_d2dTarget == null) return;
+        if (_d2dContext == null) return;
 
         _clearBrush?.Dispose();
         _testBrush?.Dispose();
@@ -318,8 +324,8 @@ public sealed class D3DImageRenderer : IDisposable
         var clearColor = GetWpfColor("Color.BackgroundDark");
         var testColor = GetWpfColor("Color.Primary");
 
-        _clearBrush = _d2dTarget.CreateSolidColorBrush(clearColor);
-        _testBrush = _d2dTarget.CreateSolidColorBrush(testColor);
+        _clearBrush = _d2dContext.CreateSolidColorBrush(clearColor);
+        _testBrush = _d2dContext.CreateSolidColorBrush(testColor);
     }
 
     /// <summary>
@@ -350,8 +356,10 @@ public sealed class D3DImageRenderer : IDisposable
         _clearBrush = null;
         _testBrush?.Dispose();
         _testBrush = null;
-        _d2dTarget?.Dispose();
-        _d2dTarget = null;
+        _d2dBitmap?.Dispose();
+        _d2dBitmap = null;
+        _d2dContext?.Dispose();
+        _d2dContext = null;
         _stagingTexture?.Dispose();
         _stagingTexture = null;
         _renderTexture?.Dispose();
@@ -360,6 +368,8 @@ public sealed class D3DImageRenderer : IDisposable
 
     private void ReleaseDevices()
     {
+        _d2dDevice?.Dispose();
+        _d2dDevice = null;
         _d2dFactory?.Dispose();
         _d2dFactory = null;
         _context?.Dispose();

@@ -1,0 +1,54 @@
+<UserControl x:Class="Neo.UI.Views.Controls.WaveformPanel"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <!-- Sprint 3.1: D3D11 → D2D1 → WriteableBitmap rendering host -->
+    <!-- CHARTER: R-01 render callback O(1), R-03 no per-frame resource creation -->
+    <!-- Source: NEO_UI_Development_Plan_WPF.md §8, ARCHITECTURE.md §5 -->
+    <!--
+        This panel hosts the hardware-accelerated waveform rendering.
+        The Image.Source is bound to WaveformRenderHost.ImageSource (WriteableBitmap).
+        SizeChanged triggers Resize() to update render target dimensions.
+    -->
+
+    <Grid x:Name="RootGrid" Background="{StaticResource BackgroundDarkBrush}">
+        <!-- D3D-rendered content (WriteableBitmap) -->
+        <Image x:Name="RenderImage"
+               Stretch="None"
+               HorizontalAlignment="Left"
+               VerticalAlignment="Top"
+               RenderOptions.BitmapScalingMode="NearestNeighbor"
+               RenderOptions.EdgeMode="Aliased"/>
+
+        <!-- Loading overlay (shown when device not ready) -->
+        <Border x:Name="LoadingOverlay"
+                Background="{StaticResource BackgroundDarkBrush}"
+                Visibility="Collapsed">
+            <TextBlock Text="Initializing renderer..."
+                       Foreground="{StaticResource TextDarkMutedBrush}"
+                       FontSize="{StaticResource FontSize.Body}"
+                       HorizontalAlignment="Center"
+                       VerticalAlignment="Center"/>
+        </Border>
+
+        <!-- Error overlay (shown on device lost) -->
+        <Border x:Name="ErrorOverlay"
+                Background="#DD1A1A2E"
+                Visibility="Collapsed">
+            <StackPanel HorizontalAlignment="Center"
+                        VerticalAlignment="Center">
+                <TextBlock Text="Render device lost"
+                           Foreground="{StaticResource ErrorBrush}"
+                           FontSize="{StaticResource FontSize.Body}"
+                           FontWeight="SemiBold"
+                           HorizontalAlignment="Center"/>
+                <TextBlock Text="Click to recover"
+                           Foreground="{StaticResource TextDarkSecondaryBrush}"
+                           FontSize="{StaticResource FontSize.Caption}"
+                           HorizontalAlignment="Center"
+                           Margin="0,4,0,0"/>
+            </StackPanel>
+        </Border>
+    </Grid>
+
+</UserControl>

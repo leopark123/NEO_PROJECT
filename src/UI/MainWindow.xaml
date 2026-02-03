@@ -151,6 +151,7 @@
         <!-- CENTER: WAVEFORM DISPLAY AREA — UI_SPEC §4.1/§4.2             -->
         <!-- Sprint 1.2-fix: ContentControl for ViewModel-driven page      -->
         <!-- switching. Waveform placeholders shown when Home is active.    -->
+        <!-- Sprint 3.1: Added WaveformPanel for D3D rendering              -->
         <!-- ============================================================ -->
         <Grid x:Name="CenterWaveformArea" Background="{StaticResource BackgroundDarkBrush}">
 
@@ -161,11 +162,11 @@
             <ContentControl Content="{Binding CurrentPage}"
                             Panel.ZIndex="0"/>
 
-            <!-- Static waveform placeholders (visible when Home is active) -->
-            <Grid x:Name="WaveformPlaceholderGrid"
-                  Panel.ZIndex="1">
-                <Grid.Style>
-                    <Style TargetType="Grid">
+            <!-- Sprint 3.1: D3D-rendered waveform panel (replaces placeholders) -->
+            <controls:WaveformPanel x:Name="WaveformRenderPanel"
+                                    Panel.ZIndex="1">
+                <controls:WaveformPanel.Style>
+                    <Style TargetType="UserControl">
                         <Setter Property="Visibility" Value="Collapsed"/>
                         <Style.Triggers>
                             <DataTrigger Binding="{Binding ActiveRoute}" Value="Home">
@@ -173,7 +174,14 @@
                             </DataTrigger>
                         </Style.Triggers>
                     </Style>
-                </Grid.Style>
+                </controls:WaveformPanel.Style>
+            </controls:WaveformPanel>
+
+            <!-- Static waveform placeholders (Sprint 3.1: hidden, kept for reference) -->
+            <!-- These placeholders are preserved for fallback/debugging but hidden by default -->
+            <Grid x:Name="WaveformPlaceholderGrid"
+                  Panel.ZIndex="0"
+                  Visibility="Collapsed">
             <Grid.RowDefinitions>
                 <!-- aEEG Ch1 trend (15%) -->
                 <RowDefinition Height="15*"/>

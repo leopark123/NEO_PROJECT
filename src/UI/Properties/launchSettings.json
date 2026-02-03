@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "Neo.UI": {
+      "commandName": "Project",
+      "workingDirectory": "$(ProjectDir)"
+    }
+  }
+}
