@@ -24,6 +24,9 @@
     <ProjectReference Include="..\DSP\Neo.DSP.csproj" />
     <ProjectReference Include="..\Playback\Neo.Playback.csproj" />
     <ProjectReference Include="..\Mock\Neo.Mock.csproj" />
+    <ProjectReference Include="..\Video\Neo.Video.csproj" />
+    <ProjectReference Include="..\NIRS\Neo.NIRS.csproj" />
+    <ProjectReference Include="..\Host\Neo.Host.csproj" />
   </ItemGroup>
 
 </Project>

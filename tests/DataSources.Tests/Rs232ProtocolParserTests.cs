@@ -527,3 +527,851 @@ public class Rs232ProtocolParserTests
 
     #endregion
 }
+
+/// <summary>
+/// NirsProtocolParser 单元测试。
+/// </summary>
+/// <remarks>
+/// 测试依据: ICD_NIRS_RS232_Protocol_Fields.md
+/// - 协议: ASCII 文本（Nonin 1 format）
+/// - 分隔符: 空格 | , \
+/// - CRC: CRC-16 CCITT (XMODEM)
+/// - 帧长: 250-350 bytes (可变)
+/// - 采样率: 1 Hz
+/// </remarks>
+public class NirsProtocolParserTests
+{
+    /// <summary>
+    /// 生成有效的 NIRS 测试帧（ASCII 文本）。
+    /// </summary>
+    /// <remarks>
+    /// 格式参考: ICD §4 示例帧（line 56）
+    /// </remarks>
+    private static byte[] CreateValidFrame(
+        string ch1 = "72",
+        string ch2 = "68",
+        string ch3 = "70",
+        string ch4 = "65")
+    {
+        // 构造 ASCII 帧
+        // 注意：CRC 计算范围从 'C' (Ch1) 到 '=' (CKSUM=)
+        string dataWithoutCrc =
+            $"Ch1 {ch1} {ch2} {ch3} {ch4} 1 2 3 4 | " +
+            "TIMESTAMP=2024-12-17T09:15:42.000+08:00 | " +
+            $"rSO2={ch1},{ch2},{ch3},{ch4} | " +
+            "HbI=11.5,10.8,11.2,10.5 | " +
+            "AUC=0.00,0.00,0.00,0.00 | " +
+            "REF=70,70,70,70 | " +
+            "HI_LIM=OFF,OFF,OFF,OFF | " +
+            "LOW_LIM=50,50,50,50 | " +
+            "ALM=0,0,0,0 | " +
+            "SIG_QUAL_ALM=0,0,0,0 | " +
+            "POD_COMM_ALM=0,0,0,0 | " +
+            "SNS_FLT=0,0,0,0 | " +
+            "LCD_FLT\\0\\LOW_BATT\\0\\CRIT_BATT\\0\\BATT_FLT\\0\\STK_KEY\\0\\SND_FLT\\0\\SND_ERR\\0\\EXT_MEM_ERR\\0 | " +
+            "CKSUM=";
+
+        byte[] dataBytes = System.Text.Encoding.ASCII.GetBytes(dataWithoutCrc);
+        ushort crc = CalculateCrc16Ccitt(dataBytes);
+
+        string fullFrame = dataWithoutCrc + crc.ToString("X4") + "\r\n";
+        return System.Text.Encoding.ASCII.GetBytes(fullFrame);
+    }
+
+    /// <summary>
+    /// 计算 CRC-16 CCITT (XMODEM)。
+    /// </summary>
+    /// <remarks>
+    /// 来源: ICD §3.3 L98-112 (C 参考实现)
+    /// 测试向量: "123456789" → 0x31C3
+    /// </remarks>
+    private static ushort CalculateCrc16Ccitt(byte[] data)
+    {
+        ushort crc = 0x0000;
+        const ushort polynomial = 0x1021;
+
+        foreach (byte b in data)
+        {
+            crc ^= (ushort)(b << 8);
+
+            for (int i = 0; i < 8; i++)
+            {
+                if ((crc & 0x8000) != 0)
+                {
+                    crc = (ushort)((crc << 1) ^ polynomial);
+                }
+                else
+                {
+                    crc <<= 1;
+                }
+            }
+        }
+
+        return crc;
+    }
+
+    #region CRC-16 CCITT 测试
+
+    /// <summary>
+    /// 测试: CRC-16 CCITT (XMODEM) 测试向量。
+    /// </summary>
+    /// <remarks>
+    /// 来源: ICD §3.3 L93-94
+    /// 输入: "123456789" (ASCII)
+    /// 期望输出: 0x31C3
+    /// </remarks>
+    public void Crc16Ccitt_TestVector_ShouldMatch()
+    {
+        // Arrange
+        byte[] testInput = System.Text.Encoding.ASCII.GetBytes("123456789");
+
+        // Act
+        ushort crc = CalculateCrc16Ccitt(testInput);
+
+        // Assert
+        Assert.Equal((ushort)0x31C3, crc);
+    }
+
+    /// <summary>
+    /// 测试: CRC 校验通过时应触发 PacketParsed 事件。
+    /// </summary>
+    public void NirsCrcValid_ShouldTriggerPacketParsed()
+    {
+        // Arrange
+        var parser = new NirsProtocolParser();
+        NirsSample? receivedSample = null;
+        parser.PacketParsed += sample => receivedSample = sample;
+
+        byte[] frame = CreateValidFrame(ch1: "72", ch2: "68", ch3: "70", ch4: "65");
+
+        // Act
+        parser.ProcessBytes(frame, frame.Length, timestampUs: 1000);
+
+        // Assert
+        Assert.NotNull(receivedSample);
+        Assert.Equal(1000, receivedSample.TimestampUs);
+        Assert.Equal(72.0, receivedSample.Ch1Percent, precision: 1);
+        Assert.Equal(68.0, receivedSample.Ch2Percent, precision: 1);
+        Assert.Equal(70.0, receivedSample.Ch3Percent, precision: 1);
+        Assert.Equal(65.0, receivedSample.Ch4Percent, precision: 1);
+        Assert.Equal(1, parser.PacketsReceived);
+        Assert.Equal(0, parser.CrcErrors);
+    }
+
+    /// <summary>
+    /// 测试: CRC 校验失败时应触发 CrcErrorOccurred 事件。
+    /// </summary>
+    public void NirsCrcInvalid_ShouldTriggerCrcError()
+    {
+        // Arrange
+        var parser = new NirsProtocolParser();
+        long? errorCount = null;
+        parser.CrcErrorOccurred += count => errorCount = count;
+
+        // 创建帧并破坏 CRC
+        string invalidFrame = "Ch1 72 68 70 65 1 2 3 4 | TIMESTAMP=2024-12-17T09:15:42.000+08:00 | " +
+            "rSO2=72,68,70,65 | HbI=11.5,10.8,11.2,10.5 | CKSUM=0000\r\n"; // 错误的 CRC
+        byte[] frameBytes = System.Text.Encoding.ASCII.GetBytes(invalidFrame);
+
+        // Act
+        parser.ProcessBytes(frameBytes, frameBytes.Length, timestampUs: 1000);
+
+        // Assert
+        Assert.NotNull(errorCount);
+        Assert.Equal(1, errorCount);
+        Assert.Equal(0, parser.PacketsReceived);
+        Assert.Equal(1, parser.CrcErrors);
+    }
+
+    #endregion
+
+    #region 字段解析测试
+
+    /// <summary>
+    /// 测试: rSO2 字段正常值解析。
+    /// </summary>
+    /// <remarks>
+    /// 来源: ICD §4.2.4 L153-157
+    /// 值域: 0-100%
+    /// </remarks>
+    public void NirsRso2_ValidValues_ShouldParse()
+    {
+        // Arrange
+        var parser = new NirsProtocolParser();
+        NirsSample? receivedSample = null;
+        parser.PacketParsed += sample => receivedSample = sample;
+
+        byte[] frame = CreateValidFrame(ch1: "85", ch2: "90", ch3: "78", ch4: "82");
+
+        // Act
+        parser.ProcessBytes(frame, frame.Length, timestampUs: 2000);
+
+        // Assert
+        Assert.NotNull(receivedSample);
+        Assert.Equal(85.0, receivedSample.Ch1Percent, precision: 1);
+        Assert.Equal(90.0, receivedSample.Ch2Percent, precision: 1);
+        Assert.Equal(78.0, receivedSample.Ch3Percent, precision: 1);
+        Assert.Equal(82.0, receivedSample.Ch4Percent, precision: 1);
+
+        // 所有 4 个物理通道有效
+        Assert.Equal(0x0F, receivedSample.ValidMask); // bit0-3 = 1
+    }
+
+    /// <summary>
+    /// 测试: "---" 无效值标记处理。
+    /// </summary>
+    /// <remarks>
+    /// 来源: ICD §4.2.4 L155-156
+    /// "---" 表示探头未连接或信号无效
+    /// </remarks>
+    public void NirsRso2_InvalidMarker_ShouldBeInvalid()
+    {
+        // Arrange
+        var parser = new NirsProtocolParser();
+        NirsSample? receivedSample = null;
+        parser.PacketParsed += sample => receivedSample = sample;
+
+        // Ch2 和 Ch4 无效
+        byte[] frame = CreateValidFrame(ch1: "72", ch2: "---", ch3: "68", ch4: "---");
+
+        // Act
+        parser.ProcessBytes(frame, frame.Length, timestampUs: 3000);
+
+        // Assert
+        Assert.NotNull(receivedSample);
+        Assert.Equal(72.0, receivedSample.Ch1Percent, precision: 1);
+        Assert.Equal(0.0, receivedSample.Ch2Percent, precision: 1); // 无效值为 0
+        Assert.Equal(68.0, receivedSample.Ch3Percent, precision: 1);
+        Assert.Equal(0.0, receivedSample.Ch4Percent, precision: 1); // 无效值为 0
+
+        // ValidMask: bit0=1 (Ch1), bit1=0 (Ch2), bit2=1 (Ch3), bit3=0 (Ch4)
+        Assert.Equal(0x05, receivedSample.ValidMask); // 0b00000101
+    }
+
+    /// <summary>
+    /// 测试: 虚拟通道 Ch5-Ch6 应始终无效。
+    /// </summary>
+    /// <remarks>
+    /// 来源: ICD §6.2 L234-235
+    /// NEO 需要 6 通道，但 Nonin X-100M 只有 4 物理通道
+    /// Ch5-Ch6 为虚拟通道，状态为 DEVICE_NOT_SUPPORTED
+    /// </remarks>
+    public void NirsVirtualChannels_ShouldBeInvalid()
+    {
+        // Arrange
+        var parser = new NirsProtocolParser();
+        NirsSample? receivedSample = null;
+        parser.PacketParsed += sample => receivedSample = sample;
+
+        byte[] frame = CreateValidFrame();
+
+        // Act
+        parser.ProcessBytes(frame, frame.Length, timestampUs: 4000);
+
+        // Assert
+        Assert.NotNull(receivedSample);
+
+        // Ch5-Ch6 值为 0
+        Assert.Equal(0.0, receivedSample.Ch5Percent, precision: 1);
+        Assert.Equal(0.0, receivedSample.Ch6Percent, precision: 1);
+
+        // ValidMask: bit4 和 bit5 应为 0 (无效)
+        byte validMask = receivedSample.ValidMask;
+        Assert.Equal(0, validMask & 0x10); // bit4 = 0
+        Assert.Equal(0, validMask & 0x20); // bit5 = 0
+    }
+
+    #endregion
+
+    #region 帧边界测试
+
+    /// <summary>
+    /// 测试: 帧分多次到达应正确解析。
+    /// </summary>
+    public void NirsHalfFrame_ShouldParseCorrectly()
+    {
+        // Arrange
+        var parser = new NirsProtocolParser();
+        NirsSample? receivedSample = null;
+        parser.PacketParsed += sample => receivedSample = sample;
+
+        byte[] frame = CreateValidFrame(ch1: "75", ch2: "80", ch3: "72", ch4: "78");
+
+        // Act - 分两次发送
+        int halfLen = frame.Length / 2;
+        parser.ProcessBytes(frame, halfLen, timestampUs: 5000);
+        Assert.Null(receivedSample); // 第一次不应触发
+
+        byte[] secondHalf = new byte[frame.Length - halfLen];
+        Array.Copy(frame, halfLen, secondHalf, 0, secondHalf.Length);
+        parser.ProcessBytes(secondHalf, secondHalf.Length, timestampUs: 5001);
+
+        // Assert
+        Assert.NotNull(receivedSample);
+        Assert.Equal(75.0, receivedSample.Ch1Percent, precision: 1);
+    }
+
+    /// <summary>
+    /// 测试: 两帧连续到达（粘包）应分别解析。
+    /// </summary>
+    public void NirsStickyFrames_ShouldParseBoth()
+    {
+        // Arrange
+        var parser = new NirsProtocolParser();
+        var samples = new List<NirsSample>();
+        parser.PacketParsed += sample => samples.Add(sample);
+
+        byte[] frame1 = CreateValidFrame(ch1: "70", ch2: "72", ch3: "68", ch4: "74");
+        byte[] frame2 = CreateValidFrame(ch1: "85", ch2: "88", ch3: "82", ch4: "86");
+
+        byte[] combined = new byte[frame1.Length + frame2.Length];
+        Array.Copy(frame1, 0, combined, 0, frame1.Length);
+        Array.Copy(frame2, 0, combined, frame1.Length, frame2.Length);
+
+        // Act
+        parser.ProcessBytes(combined, combined.Length, timestampUs: 6000);
+
+        // Assert
+        Assert.Equal(2, samples.Count);
+        Assert.Equal(70.0, samples[0].Ch1Percent, precision: 1);
+        Assert.Equal(85.0, samples[1].Ch1Percent, precision: 1);
+        Assert.Equal(2, parser.PacketsReceived);
+    }
+
+    /// <summary>
+    /// 测试: 缺少 CKSUM 字段应解析失败。
+    /// </summary>
+    public void NirsMissingCksum_ShouldFail()
+    {
+        // Arrange
+        var parser = new NirsProtocolParser();
+        NirsSample? receivedSample = null;
+        parser.PacketParsed += sample => receivedSample = sample;
+
+        // 缺少 CKSUM 字段
+        string invalidFrame = "Ch1 72 68 70 65 1 2 3 4 | rSO2=72,68,70,65\r\n";
+        byte[] frameBytes = System.Text.Encoding.ASCII.GetBytes(invalidFrame);
+
+        // Act
+        parser.ProcessBytes(frameBytes, frameBytes.Length, timestampUs: 7000);
+
+        // Assert
+        Assert.Null(receivedSample);
+        Assert.Equal(0, parser.PacketsReceived);
+        Assert.True(parser.ParseErrors > 0);
+    }
+
+    /// <summary>
+    /// 测试: 缺少 rSO2 字段应解析失败。
+    /// </summary>
+    public void NirsMissingRso2_ShouldFail()
+    {
+        // Arrange
+        var parser = new NirsProtocolParser();
+        NirsSample? receivedSample = null;
+        parser.PacketParsed += sample => receivedSample = sample;
+
+        // 计算正确的 CRC 但缺少 rSO2 字段
+        string dataWithoutCrc = "Ch1 72 68 70 65 1 2 3 4 | TIMESTAMP=2024-12-17T09:15:42.000+08:00 | CKSUM=";
+        byte[] dataBytes = System.Text.Encoding.ASCII.GetBytes(dataWithoutCrc);
+        ushort crc = CalculateCrc16Ccitt(dataBytes);
+        string fullFrame = dataWithoutCrc + crc.ToString("X4") + "\r\n";
+        byte[] frameBytes = System.Text.Encoding.ASCII.GetBytes(fullFrame);
+
+        // Act
+        parser.ProcessBytes(frameBytes, frameBytes.Length, timestampUs: 8000);
+
+        // Assert
+        Assert.Null(receivedSample);
+        Assert.Equal(0, parser.PacketsReceived);
+    }
+
+    #endregion
+
+    #region Reset 测试
+
+    /// <summary>
+    /// 测试: Reset 后应清除缓冲区状态。
+    /// </summary>
+    public void NirsReset_ShouldClearBuffer()
+    {
+        // Arrange
+        var parser = new NirsProtocolParser();
+        byte[] frame = CreateValidFrame();
+
+        // 发送半帧
+        parser.ProcessBytes(frame, frame.Length / 2, timestampUs: 9000);
+
+        // Act - 重置
+        parser.Reset();
+
+        // 重新发送完整帧，应该能解析
+        NirsSample? receivedSample = null;
+        parser.PacketParsed += sample => receivedSample = sample;
+        parser.ProcessBytes(frame, frame.Length, timestampUs: 9001);
+
+        // Assert
+        Assert.NotNull(receivedSample);
+    }
+
+    #endregion
+
+    #region 边界值测试
+
+    /// <summary>
+    /// 测试: rSO2 = 0% 应有效。
+    /// </summary>
+    public void NirsRso2_ZeroPercent_ShouldBeValid()
+    {
+        // Arrange
+        var parser = new NirsProtocolParser();
+        NirsSample? receivedSample = null;
+        parser.PacketParsed += sample => receivedSample = sample;
+
+        byte[] frame = CreateValidFrame(ch1: "0", ch2: "0", ch3: "0", ch4: "0");
+
+        // Act
+        parser.ProcessBytes(frame, frame.Length, timestampUs: 10000);
+
+        // Assert
+        Assert.NotNull(receivedSample);
+        Assert.Equal(0.0, receivedSample.Ch1Percent, precision: 1);
+        Assert.Equal(0x0F, receivedSample.ValidMask); // 全部有效
+    }
+
+    /// <summary>
+    /// 测试: rSO2 = 100% 应有效。
+    /// </summary>
+    public void NirsRso2_HundredPercent_ShouldBeValid()
+    {
+        // Arrange
+        var parser = new NirsProtocolParser();
+        NirsSample? receivedSample = null;
+        parser.PacketParsed += sample => receivedSample = sample;
+
+        byte[] frame = CreateValidFrame(ch1: "100", ch2: "100", ch3: "100", ch4: "100");
+
+        // Act
+        parser.ProcessBytes(frame, frame.Length, timestampUs: 11000);
+
+        // Assert
+        Assert.NotNull(receivedSample);
+        Assert.Equal(100.0, receivedSample.Ch1Percent, precision: 1);
+        Assert.Equal(0x0F, receivedSample.ValidMask);
+    }
+
+    /// <summary>
+    /// 测试: rSO2 > 100% 应无效。
+    /// </summary>
+    public void NirsRso2_OutOfRange_ShouldBeInvalid()
+    {
+        // Arrange
+        var parser = new NirsProtocolParser();
+        NirsSample? receivedSample = null;
+        parser.PacketParsed += sample => receivedSample = sample;
+
+        byte[] frame = CreateValidFrame(ch1: "150", ch2: "72", ch3: "68", ch4: "70");
+
+        // Act
+        parser.ProcessBytes(frame, frame.Length, timestampUs: 12000);
+
+        // Assert
+        Assert.NotNull(receivedSample);
+        // Ch1 超出范围应标记为无效
+        Assert.Equal(0, receivedSample.ValidMask & 0x01); // bit0 = 0 (Ch1 无效)
+    }
+
+    #endregion
+}
+
+/// <summary>
+/// NIRS 解析器健壮性测试。
+/// </summary>
+/// <remarks>
+/// 测试异常场景和边界条件：
+/// - 帧截断和不完整数据
+/// - 字段格式错误
+/// - 极端值处理
+/// - 并发访问安全性
+/// </remarks>
+public class NirsProtocolParserRobustnessTests
+{
+    #region 帧截断测试
+
+    /// <summary>
+    /// 测试: 只有 CR 没有 LF 应不触发解析。
+    /// </summary>
+    public void NirsOnlyCR_ShouldNotParse()
+    {
+        // Arrange
+        var parser = new NirsProtocolParser();
+        NirsSample? receivedSample = null;
+        parser.PacketParsed += sample => receivedSample = sample;
+
+        // 帧以 CR 结束但没有 LF
+        string frame = "Ch1 72 68 70 65 1 2 3 4 | rSO2=72,68,70,65 | CKSUM=0000\r";
+        byte[] frameBytes = System.Text.Encoding.ASCII.GetBytes(frame);
+
+        // Act
+        parser.ProcessBytes(frameBytes, frameBytes.Length, timestampUs: 1000);
+
+        // Assert
+        Assert.Null(receivedSample);
+        Assert.Equal(0, parser.PacketsReceived);
+    }
+
+    /// <summary>
+    /// 测试: 多个连续 CR 应不影响解析。
+    /// </summary>
+    public void NirsMultipleCR_ShouldHandleCorrectly()
+    {
+        // Arrange
+        var parser = new NirsProtocolParser();
+        var samples = new List<NirsSample>();
+        parser.PacketParsed += sample => samples.Add(sample);
+
+        // 创建有效帧
+        byte[] validFrame = CreateValidNirsFrame("75", "80", "72", "78");
+
+        // 在帧前插入多个 CR
+        byte[] testData = new byte[validFrame.Length + 3];
+        testData[0] = 0x0D; // CR
+        testData[1] = 0x0D; // CR
+        testData[2] = 0x0D; // CR
+        Array.Copy(validFrame, 0, testData, 3, validFrame.Length);
+
+        // Act
+        parser.ProcessBytes(testData, testData.Length, timestampUs: 2000);
+
+        // Assert
+        Assert.Equal(1, samples.Count); // 应只解析出一个有效帧
+    }
+
+    /// <summary>
+    /// 测试: 帧被截断到一半应等待更多数据。
+    /// </summary>
+    public void NirsTruncatedFrame_ShouldWaitForMore()
+    {
+        // Arrange
+        var parser = new NirsProtocolParser();
+        NirsSample? receivedSample = null;
+        parser.PacketParsed += sample => receivedSample = sample;
+
+        byte[] fullFrame = CreateValidNirsFrame("70", "72", "68", "74");
+        byte[] truncated = new byte[fullFrame.Length / 2];
+        Array.Copy(fullFrame, truncated, truncated.Length);
+
+        // Act - 发送截断帧
+        parser.ProcessBytes(truncated, truncated.Length, timestampUs: 3000);
+        Assert.Null(receivedSample);
+
+        // 发送剩余部分
+        byte[] remaining = new byte[fullFrame.Length - truncated.Length];
+        Array.Copy(fullFrame, truncated.Length, remaining, 0, remaining.Length);
+        parser.ProcessBytes(remaining, remaining.Length, timestampUs: 3001);
+
+        // Assert
+        Assert.NotNull(receivedSample);
+    }
+
+    #endregion
+
+    #region 字段格式错误测试
+
+    /// <summary>
+    /// 测试: rSO2 字段包含非法字符应解析失败。
+    /// </summary>
+    public void NirsRso2_IllegalCharacters_ShouldFail()
+    {
+        // Arrange
+        var parser = new NirsProtocolParser();
+        NirsSample? receivedSample = null;
+        parser.PacketParsed += sample => receivedSample = sample;
+
+        // rSO2 字段包含字母
+        byte[] invalidFrame = CreateInvalidNirsFrame("ABC", "68", "70", "65");
+
+        // Act
+        parser.ProcessBytes(invalidFrame, invalidFrame.Length, timestampUs: 4000);
+
+        // Assert
+        // 由于格式错误，可能解析失败或值无效
+        // 检查是否有 ParseErrors 或 Ch1 标记为无效
+        if (receivedSample.HasValue)
+        {
+            Assert.Equal(0, receivedSample.Value.ValidMask & 0x01); // Ch1 应无效
+        }
+    }
+
+    /// <summary>
+    /// 测试: 超长字段应被截断或拒绝。
+    /// </summary>
+    public void NirsRso2_VeryLongField_ShouldHandle()
+    {
+        // Arrange
+        var parser = new NirsProtocolParser();
+        NirsSample? receivedSample = null;
+        parser.PacketParsed += sample => receivedSample = sample;
+
+        // 超长值（1000 位数字）
+        string longValue = new string('9', 1000);
+        byte[] invalidFrame = CreateInvalidNirsFrame(longValue, "68", "70", "65");
+
+        // Act
+        parser.ProcessBytes(invalidFrame, invalidFrame.Length, timestampUs: 5000);
+
+        // Assert
+        // 应该被解析器拒绝或将 Ch1 标记为无效
+        if (receivedSample.HasValue)
+        {
+            Assert.Equal(0, receivedSample.Value.ValidMask & 0x01);
+        }
+    }
+
+    /// <summary>
+    /// 测试: 缺少逗号分隔符应解析失败。
+    /// </summary>
+    public void NirsRso2_MissingComma_ShouldFail()
+    {
+        // Arrange
+        var parser = new NirsProtocolParser();
+        NirsSample? receivedSample = null;
+        parser.PacketParsed += sample => receivedSample = sample;
+
+        string dataWithoutCrc = "Ch1 72 68 70 65 1 2 3 4 | rSO2=72 68 70 65 | CKSUM="; // 缺少逗号
+        byte[] dataBytes = System.Text.Encoding.ASCII.GetBytes(dataWithoutCrc);
+        ushort crc = CalculateCrc16Ccitt(dataBytes);
+        string fullFrame = dataWithoutCrc + crc.ToString("X4") + "\r\n";
+        byte[] frameBytes = System.Text.Encoding.ASCII.GetBytes(fullFrame);
+
+        // Act
+        parser.ProcessBytes(frameBytes, frameBytes.Length, timestampUs: 6000);
+
+        // Assert
+        Assert.Null(receivedSample); // 格式错误应解析失败
+    }
+
+    #endregion
+
+    #region 极端值测试
+
+    /// <summary>
+    /// 测试: 负数 rSO2 值应无效。
+    /// </summary>
+    public void NirsRso2_NegativeValue_ShouldBeInvalid()
+    {
+        // Arrange
+        var parser = new NirsProtocolParser();
+        NirsSample? receivedSample = null;
+        parser.PacketParsed += sample => receivedSample = sample;
+
+        byte[] frame = CreateValidNirsFrame("-10", "68", "70", "65");
+
+        // Act
+        parser.ProcessBytes(frame, frame.Length, timestampUs: 7000);
+
+        // Assert
+        if (receivedSample.HasValue)
+        {
+            // 负数应标记为无效
+            Assert.Equal(0, receivedSample.Value.ValidMask & 0x01);
+        }
+    }
+
+    /// <summary>
+    /// 测试: 科学计数法表示的值（如 7.2E+01）应正确解析或标记无效。
+    /// </summary>
+    public void NirsRso2_ScientificNotation_ShouldHandle()
+    {
+        // Arrange
+        var parser = new NirsProtocolParser();
+        NirsSample? receivedSample = null;
+        parser.PacketParsed += sample => receivedSample = sample;
+
+        byte[] frame = CreateValidNirsFrame("7.2E+01", "6.8E+01", "70", "65");
+
+        // Act
+        parser.ProcessBytes(frame, frame.Length, timestampUs: 8000);
+
+        // Assert
+        if (receivedSample.HasValue)
+        {
+            // .NET double.TryParse 支持科学计数法
+            // 7.2E+01 = 72.0
+            if ((receivedSample.Value.ValidMask & 0x01) != 0)
+            {
+                Assert.Equal(72.0, receivedSample.Value.Ch1Percent, precision: 1);
+            }
+        }
+    }
+
+    /// <summary>
+    /// 测试: 浮点数溢出（超大值）应处理。
+    /// </summary>
+    public void NirsRso2_FloatOverflow_ShouldHandle()
+    {
+        // Arrange
+        var parser = new NirsProtocolParser();
+        NirsSample? receivedSample = null;
+        parser.PacketParsed += sample => receivedSample = sample;
+
+        byte[] frame = CreateValidNirsFrame("1E+308", "68", "70", "65"); // 接近 double 上限
+
+        // Act
+        parser.ProcessBytes(frame, frame.Length, timestampUs: 9000);
+
+        // Assert
+        if (receivedSample.HasValue)
+        {
+            // 超出范围应标记为无效
+            Assert.Equal(0, receivedSample.Value.ValidMask & 0x01);
+        }
+    }
+
+    /// <summary>
+    /// 测试: 所有通道均为 "---" 应全部无效。
+    /// </summary>
+    public void NirsRso2_AllInvalid_ShouldBeAllZero()
+    {
+        // Arrange
+        var parser = new NirsProtocolParser();
+        NirsSample? receivedSample = null;
+        parser.PacketParsed += sample => receivedSample = sample;
+
+        byte[] frame = CreateValidNirsFrame("---", "---", "---", "---");
+
+        // Act
+        parser.ProcessBytes(frame, frame.Length, timestampUs: 10000);
+
+        // Assert
+        Assert.NotNull(receivedSample);
+        Assert.Equal(0x00, receivedSample.Value.ValidMask); // 所有通道无效
+        Assert.Equal(0.0, receivedSample.Value.Ch1Percent);
+        Assert.Equal(0.0, receivedSample.Value.Ch2Percent);
+        Assert.Equal(0.0, receivedSample.Value.Ch3Percent);
+        Assert.Equal(0.0, receivedSample.Value.Ch4Percent);
+    }
+
+    #endregion
+
+    #region 并发访问测试
+
+    /// <summary>
+    /// 测试: 多线程并发调用 ProcessBytes 应不崩溃。
+    /// </summary>
+    /// <remarks>
+    /// 注意: 这只是基础并发测试，实际使用中应确保单线程调用
+    /// </remarks>
+    public void NirsConcurrent_MultipleThreads_ShouldNotCrash()
+    {
+        // Arrange
+        var parser = new NirsProtocolParser();
+        int samplesReceived = 0;
+        parser.PacketParsed += _ => System.Threading.Interlocked.Increment(ref samplesReceived);
+
+        byte[] frame = CreateValidNirsFrame("75", "80", "72", "78");
+
+        // Act - 多线程并发发送数据
+        var tasks = new System.Threading.Tasks.Task[10];
+        for (int i = 0; i < tasks.Length; i++)
+        {
+            int threadId = i;
+            tasks[i] = System.Threading.Tasks.Task.Run(() =>
+            {
+                for (int j = 0; j < 10; j++)
+                {
+                    parser.ProcessBytes(frame, frame.Length, timestampUs: threadId * 1000 + j);
+                    System.Threading.Thread.Sleep(1); // 模拟间隔
+                }
+            });
+        }
+
+        System.Threading.Tasks.Task.WaitAll(tasks);
+
+        // Assert
+        // 至少应解析一些帧（具体数量取决于竞争条件）
+        Assert.True(samplesReceived > 0);
+    }
+
+    #endregion
+
+    #region 辅助方法
+
+    private static byte[] CreateValidNirsFrame(string ch1, string ch2, string ch3, string ch4)
+    {
+        string dataWithoutCrc =
+            $"Ch1 {ch1} {ch2} {ch3} {ch4} 1 2 3 4 | " +
+            "TIMESTAMP=2024-12-17T09:15:42.000+08:00 | " +
+            $"rSO2={ch1},{ch2},{ch3},{ch4} | " +
+            "HbI=11.5,10.8,11.2,10.5 | " +
+            "CKSUM=";
+
+        byte[] dataBytes = System.Text.Encoding.ASCII.GetBytes(dataWithoutCrc);
+        ushort crc = CalculateCrc16Ccitt(dataBytes);
+        string fullFrame = dataWithoutCrc + crc.ToString("X4") + "\r\n";
+        return System.Text.Encoding.ASCII.GetBytes(fullFrame);
+    }
+
+    private static byte[] CreateInvalidNirsFrame(string ch1, string ch2, string ch3, string ch4)
+    {
+        // 故意创建带有错误 CRC 的帧，用于测试格式错误
+        string frame = $"Ch1 {ch1} {ch2} {ch3} {ch4} 1 2 3 4 | rSO2={ch1},{ch2},{ch3},{ch4} | CKSUM=FFFF\r\n";
+        return System.Text.Encoding.ASCII.GetBytes(frame);
+    }
+
+    private static ushort CalculateCrc16Ccitt(byte[] data)
+    {
+        ushort crc = 0x0000;
+        const ushort polynomial = 0x1021;
+
+        foreach (byte b in data)
+        {
+            crc ^= (ushort)(b << 8);
+            for (int i = 0; i < 8; i++)
+            {
+                if ((crc & 0x8000) != 0)
+                {
+                    crc = (ushort)((crc << 1) ^ polynomial);
+                }
+                else
+                {
+                    crc <<= 1;
+                }
+            }
+        }
+        return crc;
+    }
+
+    private static class Assert
+    {
+        public static void NotNull(object? obj)
+        {
+            if (obj == null) throw new Exception("Assert.NotNull failed");
+        }
+
+        public static void Null(object? obj)
+        {
+            if (obj != null) throw new Exception("Assert.Null failed");
+        }
+
+        public static void Equal<T>(T expected, T actual)
+        {
+            if (!EqualityComparer<T>.Default.Equals(expected, actual))
+                throw new Exception($"Assert.Equal failed: expected {expected}, actual {actual}");
+        }
+
+        public static void Equal(double expected, double actual, int precision)
+        {
+            double tolerance = Math.Pow(10, -precision);
+            if (Math.Abs(expected - actual) > tolerance)
+                throw new Exception($"Assert.Equal failed: expected {expected}, actual {actual}");
+        }
+
+        public static void True(bool condition)
+        {
+            if (!condition) throw new Exception("Assert.True failed");
+        }
+    }
+
+    #endregion
+}

@@ -1,9 +1,10 @@
 // NirsIntegrationShell.cs
-// NIRS 集成壳 - S3-01: 仅做系统层集成位，不实现协议
+// NIRS 集成壳 - S3-01 + S3-00 完整实现
 //
-// 依据: PROJECT_STATE.md S3-00 Blocked, ADR-015
+// 依据: PROJECT_STATE.md S3-00 已完成 (2026-02-06)
 
 using Neo.Core.Enums;
+using Neo.Core.Interfaces;
 using Neo.Core.Models;
 
 namespace Neo.NIRS;
@@ -14,69 +15,177 @@ namespace Neo.NIRS;
 public enum NirsShellStatus
 {
     /// <summary>
-    /// 模块被规格证据阻塞，无法运行。
+    /// 模块已就绪。
     /// </summary>
-    BlockedByMissingEvidence,
+    Ready,
 
     /// <summary>
-    /// 模块已就绪（未来解锁后使用）。
+    /// 模块运行中。
     /// </summary>
-    Ready
+    Running,
+
+    /// <summary>
+    /// 模块已停止。
+    /// </summary>
+    Stopped
 }
 
 /// <summary>
 /// NIRS 集成壳。
-/// 仅提供系统层注册位，不实现任何协议或算法。
+/// 包装 NIRS 数据源并提供质量标志映射。
 /// </summary>
 /// <remarks>
-/// S3-01 范围:
-/// - 类型存在、接线存在、生命周期存在
-/// - 系统在没有 NIRS 实现的情况下可运行
-/// - 所有 NIRS 数值为 double.NaN
-/// - 质量标志: QualityFlag.Undocumented | QualityFlag.BlockedBySpec
+/// S3-00 实现完成后更新:
+/// - 接受 ITimeSeriesSource&lt;NirsSample&gt; (Rs232NirsSource 或 MockNirsSource)
+/// - 质量标志映射（ValidMask → QualityFlag）
+/// - 事件转发
+/// - 完整生命周期管理
+///
+/// 质量标志映射（ICD §9.2）:
+/// - ValidMask bit=1: QualityFlag.Normal
+/// - ValidMask bit=0: QualityFlag.DEVICE_NOT_SUPPORTED (探头断开/信号无效)
+/// - Ch5-Ch6 虚拟通道: QualityFlag.DEVICE_NOT_SUPPORTED
 /// </remarks>
 public sealed class NirsIntegrationShell : IDisposable
 {
+    private readonly ITimeSeriesSource<NirsSample>? _dataSource;
     private bool _disposed;
 
     /// <summary>
     /// 当前模块状态。
     /// </summary>
-    public NirsShellStatus Status { get; private set; } = NirsShellStatus.BlockedByMissingEvidence;
-
-    /// <summary>
-    /// 阻塞原因描述。
-    /// </summary>
-    public string BlockReason => "NIRS is blocked by missing protocol evidence (S3-00).";
+    public NirsShellStatus Status { get; private set; } = NirsShellStatus.Ready;
 
     /// <summary>
     /// 模块是否可用。
     /// </summary>
-    public bool IsAvailable => Status == NirsShellStatus.Ready;
+    public bool IsAvailable => Status == NirsShellStatus.Ready || Status == NirsShellStatus.Running;
 
     /// <summary>
-    /// 启动 NIRS 集成壳。
-    /// 当前仅记录阻塞状态，不启动任何数据采集。
+    /// 阻塞原因描述（兼容性属性，S3-00 已完成）。
+    /// </summary>
+    public string BlockReason => _dataSource == null
+        ? "NIRS data source not configured."
+        : "NIRS module is ready.";
+
+    /// <summary>
+    /// NIRS 样本到达事件（含质量标志映射）。
+    /// </summary>
+    public event Action<NirsSample, QualityFlag[]>? SampleReceived;
+
+    /// <summary>
+    /// CRC 错误事件。
+    /// </summary>
+    public event Action<long>? CrcErrorOccurred;
+
+    /// <summary>
+    /// 串口错误事件。
+    /// </summary>
+    public event Action<Exception>? SerialErrorOccurred;
+
+    /// <summary>
+    /// 创建 NIRS 集成壳。
+    /// </summary>
+    /// <param name="dataSource">可选的 NIRS 数据源（Rs232NirsSource 或 MockNirsSource）</param>
+    public NirsIntegrationShell(ITimeSeriesSource<NirsSample>? dataSource = null)
+    {
+        _dataSource = dataSource;
+
+        if (_dataSource != null)
+        {
+            _dataSource.SampleReceived += OnDataSourceSampleReceived;
+
+            // 如果是 Rs232NirsSource，订阅额外事件
+            if (_dataSource is Neo.DataSources.Rs232.Rs232NirsSource rs232Source)
+            {
+                rs232Source.CrcErrorOccurred += OnCrcError;
+                rs232Source.SerialErrorOccurred += OnSerialError;
+            }
+        }
+    }
+
+    /// <summary>
+    /// 启动 NIRS 数据采集。
     /// </summary>
     public void Start()
     {
-        Status = NirsShellStatus.BlockedByMissingEvidence;
-        System.Diagnostics.Trace.TraceWarning(
-            "[NIRS] " + BlockReason);
+        if (_dataSource == null)
+        {
+            System.Diagnostics.Trace.TraceWarning(
+                "[NIRS] No data source configured, NIRS module will not run.");
+            Status = NirsShellStatus.Stopped;
+            return;
+        }
+
+        try
+        {
+            _dataSource.Start();
+            Status = NirsShellStatus.Running;
+            System.Diagnostics.Trace.TraceInformation(
+                "[NIRS] NIRS Integration Shell started successfully.");
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Trace.TraceError(
+                $"[NIRS] Failed to start: {ex.Message}");
+            Status = NirsShellStatus.Stopped;
+            throw;
+        }
     }
 
     /// <summary>
-    /// 停止 NIRS 集成壳。
+    /// 停止 NIRS 数据采集。
     /// </summary>
     public void Stop()
     {
+        _dataSource?.Stop();
+        Status = NirsShellStatus.Stopped;
     }
 
     /// <summary>
-    /// 创建一个表示阻塞状态的 NIRS 样本。
-    /// 所有通道值为 NaN，质量标志为 BlockedBySpec | Undocumented。
+    /// 数据源样本到达处理。
+    /// 进行质量标志映射并转发。
+    /// </summary>
+    private void OnDataSourceSampleReceived(NirsSample sample)
+    {
+        // 质量标志映射（ICD §9.2）
+        QualityFlag[] qualityFlags = new QualityFlag[6];
+
+        for (int i = 0; i < 6; i++)
+        {
+            int bitMask = 1 << i;
+            if ((sample.ValidMask & bitMask) != 0)
+            {
+                // 通道有效
+                qualityFlags[i] = QualityFlag.Normal;
+            }
+            else
+            {
+                // 通道无效（探头断开/信号无效/虚拟通道）
+                // 来源: ICD §4.2.4 L155-156 + §6.2 L234-235
+                qualityFlags[i] = QualityFlag.LeadOff;
+            }
+        }
+
+        // 转发事件
+        SampleReceived?.Invoke(sample, qualityFlags);
+    }
+
+    private void OnCrcError(long errorCount)
+    {
+        CrcErrorOccurred?.Invoke(errorCount);
+    }
+
+    private void OnSerialError(Exception ex)
+    {
+        SerialErrorOccurred?.Invoke(ex);
+    }
+
+    /// <summary>
+    /// 创建一个表示阻塞状态的 NIRS 样本（兼容旧代码）。
     /// </summary>
     /// <param name="timestampUs">主机时间戳（微秒），仅用于排序。</param>
+    [Obsolete("S3-00 已完成，建议使用实际数据源")]
     public static NirsSample CreateBlockedSample(long timestampUs)
     {
         return new NirsSample
@@ -93,8 +202,9 @@ public sealed class NirsIntegrationShell : IDisposable
     }
 
     /// <summary>
-    /// 获取阻塞状态下的质量标志。
+    /// 获取阻塞状态下的质量标志（兼容旧代码）。
     /// </summary>
+    [Obsolete("S3-00 已完成，建议使用实际质量标志映射")]
     public static QualityFlag BlockedQualityFlags =>
         QualityFlag.Undocumented | QualityFlag.BlockedBySpec;
 
@@ -103,6 +213,23 @@ public sealed class NirsIntegrationShell : IDisposable
         if (!_disposed)
         {
             Stop();
+
+            if (_dataSource != null)
+            {
+                _dataSource.SampleReceived -= OnDataSourceSampleReceived;
+
+                if (_dataSource is Neo.DataSources.Rs232.Rs232NirsSource rs232Source)
+                {
+                    rs232Source.CrcErrorOccurred -= OnCrcError;
+                    rs232Source.SerialErrorOccurred -= OnSerialError;
+                }
+
+                if (_dataSource is IDisposable disposable)
+                {
+                    disposable.Dispose();
+                }
+            }
+
             _disposed = true;
         }
     }

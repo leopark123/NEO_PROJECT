@@ -290,7 +290,7 @@ S5-01 Release Candidate 最终验收
     - 铁律合规: 15/15 条全部合规
     - ADR 落实: 9/9 条全部落实
     - Handoff 文档: 18/18 份完整
-    - Blocked 项: S3-00 NIRS (ADR-015, 协议证据缺失)
+    - Blocked 项: 无（S3-00 已于 2026-02-06 解冻）
   - 约束: 禁止新功能/架构调整/参数猜测/文档重写
 ```
 
@@ -323,7 +323,7 @@ S5-01 Release Candidate 最终验收
 - [x] S2-05 EEG/aEEG波形渲染层 ✅
 
 ### Sprint 3：NIRS + 视频
-- [ ] S3-00 NIRS RS232 Protocol Spec & Parser 🚫 **Blocked (ADR-015)**
+- [x] S3-00 NIRS RS232 Protocol Spec & Parser ✅ **(2026-02-06 完成)**
 - [x] S3-01 NIRS集成壳（Integration Shell）✅
 - [x] S3-02 视频采集 ✅
 - [x] S3-03 同步回放 ✅
@@ -342,18 +342,20 @@ S5-01 Release Candidate 最终验收
 ## ⚠️ Blocked（阻塞项）
 
 ```
+（无）
+
 S3-00 NIRS RS232 Protocol Spec & Parser（ADR-015 拆分任务）
-  - 状态: 🚫 Blocked
+  - 状态: ✅ 已解冻 (2026-02-06)
   - 裁决: ADR-015（S1-02 范围裁决与 NIRS 拆分）
-  - 阻塞原因: 协议证据缺失
-  - 缺失证据:
-    1. 帧头定义
-    2. 每帧长度（bytes）
-    3. 字节序
-    4. 校验算法（CRC/Checksum）
-    5. 字段映射（通道/状态/单位）
-  - 解除条件: 上述证据以可引用文本（docx/pdf/md）形式提供
-  - 约束: 证据到位前禁止实现、禁止推断、禁止写占位逻辑
+  - 解冻依据: ICD_NIRS_RS232_Protocol_Fields.md 完整提供所有必需证据
+  - 证据清单:
+    1. ✅ 帧头定义（ASCII "Ch1" 标记）
+    2. ✅ 每帧长度（250-350 bytes 可变长）
+    3. ✅ 字节序（ASCII协议，CRC大端序）
+    4. ✅ 校验算法（CRC-16 CCITT/XMODEM，含测试向量）
+    5. ✅ 字段映射（6通道完整映射 + rSO2/HbI/AUC参数）
+  - 验收标准: 全部 5 项通过（可引用/字节级精度/独立验证/含校验/覆盖6通道）
+  - 下一步: 启动 NIRS 解析器实现
 ```
 
 ---
@@ -362,6 +364,8 @@ S3-00 NIRS RS232 Protocol Spec & Parser（ADR-015 拆分任务）
 
 | 项目 | 日期 | 验证者 |
 |------|------|--------|
+| S3-00 NIRS RS232 解析器实现完成 | 2026-02-06 | Claude Code |
+| S3-00 NIRS 协议证据验收通过并解冻 | 2026-02-06 | Claude Code |
 | S5-01 RC 验收完成 | 2026-01-29 | Claude Code |
 | S4-04 截图/打印/USB导出完成 | 2026-01-29 | Claude Code |
 | S4-03 72h 压测完成 | 2026-01-29 | Claude Code |
