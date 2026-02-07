@@ -4,6 +4,7 @@ using System.Windows.Controls;
 using System.Windows.Input;
 using Neo.Mock;
 using Neo.UI.Rendering;
+using Neo.UI.Services;
 using Neo.UI.ViewModels;
 
 namespace Neo.UI.Views.Controls;
@@ -112,10 +113,16 @@ public partial class WaveformPanel : UserControl
             return;
         }
 
+        // Legacy global properties (will be deprecated in Commit 4)
         _renderHost.GainMicrovoltsPerCm = vm.Waveform.SelectedGain;
         _renderHost.YAxisRangeUv = vm.Waveform.SelectedYAxis;
         _renderHost.AeegVisibleHours = vm.Waveform.SelectedAeegHours;
         _renderHost.ShowGsHistogram = vm.Waveform.ShowGsHistogram;
+
+        // Per-lane channel mapping from Eeg1Source/Eeg2Source
+        ApplyPerLaneChannelMapping(vm.Waveform.Eeg1Source, vm.Waveform.Eeg2Source);
+
+        // Legacy lead combination mapping (deprecated, but keep for transition)
         ApplyLeadCombinationMapping(vm.Waveform.SelectedLeadCombination);
 
         vm.Waveform.PropertyChanged += OnWaveformPropertyChanged;
@@ -145,6 +152,7 @@ public partial class WaveformPanel : UserControl
 
         switch (e.PropertyName)
         {
+            // Legacy global properties (deprecated, but kept for transition)
             case nameof(WaveformViewModel.SelectedGain):
                 _renderHost.GainMicrovoltsPerCm = vm.SelectedGain;
                 break;
@@ -160,7 +168,54 @@ public partial class WaveformPanel : UserControl
             case nameof(WaveformViewModel.SelectedLeadCombination):
                 ApplyLeadCombinationMapping(vm.SelectedLeadCombination);
                 break;
+
+            // Per-lane source configuration (new model)
+            case nameof(WaveformViewModel.Eeg1Source):
+            case nameof(WaveformViewModel.Eeg2Source):
+                ApplyPerLaneChannelMapping(vm.Eeg1Source, vm.Eeg2Source);
+                LogChannelMapChange(vm.Eeg1Source, vm.Eeg2Source);
+                break;
+
+            // Per-lane gain/range (temporarily set global properties until Commit 4)
+            case nameof(WaveformViewModel.Eeg1Gain):
+            case nameof(WaveformViewModel.Eeg2Gain):
+                // TODO (Commit 4): Set per-lane gain once RenderHost supports it
+                // For now, use EEG-1 gain as the global fallback
+                _renderHost.GainMicrovoltsPerCm = vm.Eeg1Gain;
+                break;
+            case nameof(WaveformViewModel.Eeg1Range):
+            case nameof(WaveformViewModel.Eeg2Range):
+                // TODO (Commit 4): Set per-lane range once RenderHost supports it
+                // For now, use EEG-1 range as the global fallback
+                _renderHost.YAxisRangeUv = vm.Eeg1Range;
+                break;
         }
+    }
+
+    private void ApplyPerLaneChannelMapping(ChannelSourceOption? eeg1Source, ChannelSourceOption? eeg2Source)
+    {
+        if (_renderHost == null || eeg1Source == null || eeg2Source == null)
+        {
+            return;
+        }
+
+        // Protocol facts: CH1=C3-P3 (A-B), CH2=C4-P4 (C-D), CH4=C3-C4 (A-D, cross-channel/computed)
+        // Physical channel mapping: 0→CH1, 1→CH2, 2→CH3, 3→CH4
+        // Display lane 0 (top) → eeg1Source.PhysicalChannel
+        // Display lane 1 (bottom) → eeg2Source.PhysicalChannel
+        _renderHost.DataBridge.SetChannelMapping(eeg1Source.PhysicalChannel, eeg2Source.PhysicalChannel);
+    }
+
+    private void LogChannelMapChange(ChannelSourceOption? eeg1Source, ChannelSourceOption? eeg2Source)
+    {
+        if (_boundViewModel?.Audit == null || eeg1Source == null || eeg2Source == null)
+        {
+            return;
+        }
+
+        // Log CHANNEL_MAP_CHANGE audit event (required per task Commit 3)
+        string details = $"EEG-1: {eeg1Source.Label}, EEG-2: {eeg2Source.Label}";
+        _boundViewModel.Audit.Log(AuditEventTypes.ChannelMapChange, details);
     }
 
     private void ApplyLeadCombinationMapping(LeadCombinationOption? leadOption)
