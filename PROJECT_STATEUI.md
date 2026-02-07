@@ -1,8 +1,8 @@
 # NEO UI 项目状态 (PROJECT_STATEUI)
 
-> **最后更新**: 2026-02-02
-> **当前阶段**: Phase 2 ✅ 完成
-> **总进度**: Phase 1 ████████████████████ 100% | Phase 2 ████████████████████ 100% | Phase 3~7 ░░░░░░░░░░░░░░░░░░░░ 0%
+> **最后更新**: 2026-02-07
+> **当前阶段**: Phase 4 🟡 部分完成 (DialogService已实现)
+> **总进度**: Phase 1 ████████████████████ 100% | Phase 2 ████████████████████ 100% | Phase 3 ████████████████████ 100% | Phase 4 ██░░░░░░░░░░░░░░░░░░ 14% | Phase 5~7 ░░░░░░░░░░░░░░░░░░░░ 0%
 
 ---
 
@@ -13,6 +13,8 @@
 - 所有进度、完成状态只在本文件记录
 - 禁止创建 `PROJECT_STATE.md` 或任何变体
 - Agent 每完成一项任务必须更新本文件
+- 若与 `docs/release/*` 或 `status/PROGRESS.md` 冲突，以本文件「阶段总览 / 当前任务」为准
+- 文末 `Execution Track` 为历史执行日志，不作为阶段状态统计来源
 
 ---
 
@@ -22,8 +24,8 @@
 |-------|------|-----------|------|
 | **Phase 1** | 项目框架搭建 | 4 (1.1~1.4) | ✅ **完成** |
 | **Phase 2** | 主窗口交互框架 | 5 (2.1~2.5) | ✅ **完成** |
-| **Phase 3** | 波形渲染集成 | 6 (3.1~3.6) | 🔵 进行中 |
-| **Phase 4** | 对话框系统 | 7 (4.1~4.7) | ⚪ 未开始 |
+| **Phase 3** | 波形渲染集成 | 6 (3.1~3.6) | ✅ **完成** |
+| **Phase 4** | 对话框系统 | 7 (4.1~4.7) | 🟡 **部分完成** (1/7) |
 | **Phase 5** | 高级功能 | 5 (5.1~5.5) | ⚪ 未开始 |
 | **Phase 6** | NIRS + 视频 + 质量 | 3 (6.1~6.3) | ⚪ 未开始 |
 | **Phase 7** | 测试与优化 | 4 (7.1~7.4) | ⚪ 未开始 |
@@ -35,8 +37,8 @@
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│  📌 当前: Phase 2 全部完成 (Sprint 2.1~2.5)                     │
-│  下一步: Phase 3 准入审查 → Sprint 3.1 WaveformPanel            │
+│  📌 当前: Phase 3 ✅ 完成                                       │
+│  下一步: Phase 4 对话框系统 (Sprint 4.1~4.7)                   │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
@@ -169,83 +171,87 @@
 
 ---
 
-## 五、Phase 3 — 波形渲染集成 ⚪ 未开始
+## 五、Phase 3 — 波形渲染集成 ✅ 完成
 
-> **目标**: 将后端 Rendering 引擎 (src/Rendering) 通过 D3DImage 接入 WPF，实现 EEG/aEEG 波形实时显示。
-> **新增依赖**: Neo.Rendering, Neo.DSP, Neo.Playback 项目引用
+> **目标**: 将后端 Rendering 引擎 (src/Rendering) 通过 D3D11+D2D 接入 WPF，实现 EEG/aEEG 波形实时显示。
+> **新增依赖**: Neo.Rendering, Neo.DSP, Neo.Playback, Neo.Mock 项目引用
+> **渲染管线**: D3D11 → D2D1DeviceContext → Staging Texture → WriteableBitmap → WPF Image
 
-### Sprint 3.1: WaveformPanel (D3DImage 宿主)
-
-| 任务 | 状态 | 说明 |
-|------|------|------|
-| 创建 Views/Controls/WaveformPanel.xaml | [ ] | 中央波形区 UserControl |
-| D3DImageRenderer 集成到 WaveformPanel | [ ] | Image.Source = D3DImage |
-| 6 子区域布局 (aEEG×2 + EEG×2 + NIRS趋势 + SeekBar) | [ ] | UI_SPEC §4.1 |
-| CompositionTarget.Rendering 回调 | [ ] | 60fps 渲染循环 |
-| Resize 自适应 | [ ] | SizeChanged → Renderer.Resize |
-| 构建验证 | [ ] | |
-
-### Sprint 3.2: WaveformRenderHost (渲染桥接)
+### Sprint 3.1: WaveformPanel (D3DImage 宿主) ✅
 
 | 任务 | 状态 | 说明 |
 |------|------|------|
-| 创建 Rendering/WaveformRenderHost.cs | [ ] | 桥接 D3DImageRenderer ↔ Rendering 引擎 |
-| 添加项目引用: Neo.Rendering | [ ] | Neo.UI.csproj |
-| 添加项目引用: Neo.DSP | [ ] | Neo.UI.csproj (只读 LOD 查询) |
-| RenderContext 创建 (从 D2D RenderTarget) | [ ] | 复用 Rendering/Core/RenderContext |
-| LayeredRenderer 集成 (Grid/Content/Overlay) | [ ] | ARCHITECTURE §4.3 三层架构 |
-| Mock 数据源接入 (MockEegSource) | [ ] | 验证渲染管线 |
+| 创建 Views/Controls/WaveformPanel.xaml | ✅ | 中央波形区 UserControl |
+| D3DImageRenderer 集成到 WaveformPanel | ✅ | Image.Source = WriteableBitmap (D3D11→D2D→WPF) |
+| 6 子区域布局 (aEEG×2 + EEG×2 + NIRS趋势 + SeekBar) | ✅ | WaveformLayout.Create(), UI_SPEC §4.1 |
+| CompositionTarget.Rendering 回调 | ✅ | 60fps 渲染循环 |
+| Resize 自适应 | ✅ | SizeChanged → Renderer.Resize |
+| Device Lost 恢复 UI | ✅ | ErrorOverlay + 点击重试 |
+| 构建验证 | ✅ | 0 errors 0 warnings, 103/103 tests pass |
 
-### Sprint 3.3: EEG 波形渲染
-
-| 任务 | 状态 | 说明 |
-|------|------|------|
-| EegPolylineRenderer 接入 | [ ] | src/Rendering/EEG/ |
-| EegChannelView 2 通道显示 | [ ] | UI_SPEC §5.1: 默认 2 通道 |
-| EEG 波形颜色: Channel1=#00E676, Channel2=#FFD54F | [ ] | Dev Plan §3.4 |
-| Y 轴线性映射 (±100μV 默认) | [ ] | UI_SPEC §5.1 |
-| X 轴 15 秒时间窗 | [ ] | UI_SPEC §5.1 |
-| 增益切换即时生效 (< 100ms) | [ ] | UI_SPEC §6.1 |
-| 通道组合切换 | [ ] | UI_SPEC §5.1 |
-| EegGainScaler 集成 | [ ] | 增益档位映射 |
-
-### Sprint 3.4: aEEG 趋势渲染
+### Sprint 3.2: WaveformRenderHost (渲染桥接) ✅
 
 | 任务 | 状态 | 说明 |
 |------|------|------|
-| AeegTrendRenderer 接入 | [ ] | src/Rendering/AEEG/ |
-| Min/Max 包络带显示 | [ ] | UI_SPEC §5.2 |
-| 半对数 Y 轴 (0-10μV 线性, 10-200μV 对数) | [ ] | UI_SPEC §5.2 |
-| X 轴 3h 默认, 支持 1h/3h/6h/12h/24h | [ ] | UI_SPEC §5.2 |
-| AeegFill 颜色 #00E676 40% | [ ] | Dev Plan §3.4 |
-| LOD 金字塔查询集成 | [ ] | 添加 Neo.DSP 引用, LOD/LodPyramid |
-| GS 直方图渲染 (230 bins, 15秒/列) | [ ] | UI_SPEC §5.2 |
-| AeegGridAndAxisRenderer 集成 | [ ] | 网格 + 轴标签 |
+| 创建 Rendering/WaveformRenderHost.cs | ✅ | 桥接 D3DImageRenderer ↔ Rendering 引擎 |
+| 添加项目引用: Neo.Rendering | ✅ | Neo.UI.csproj |
+| 添加项目引用: Neo.DSP | ✅ | Neo.UI.csproj (只读 LOD 查询) |
+| 添加项目引用: Neo.Playback | ✅ | Neo.UI.csproj |
+| RenderContext 创建 (从 D2D DeviceContext) | ✅ | 复用 Rendering/Core/RenderContext |
+| LayeredRenderer 集成 (Grid/Content/Overlay) | ✅ | Grid/Content/Overlay 3 层可用 |
+| EegDataBridge 扫描模式 | ✅ | 左到右扫描, 15s 周期, 清除带 |
+| Mock 数据源接入 (MockEegSource) | ✅ | 验证渲染管线 |
 
-### Sprint 3.5: SeekBar 时间轴控件
-
-| 任务 | 状态 | 说明 |
-|------|------|------|
-| 创建 Views/Controls/SeekBar.xaml | [ ] | 时间轴拖动控件 |
-| 创建 ViewModels/PlaybackViewModel.cs | [ ] | 播放状态/位置/时间范围 |
-| 添加项目引用: Neo.Playback | [ ] | PlaybackClock 集成 |
-| 播放/暂停切换 | [ ] | UI_SPEC §6.3 |
-| 拖动 Seek (< 200ms 响应) | [ ] | UI_SPEC §6.3 |
-| 点击跳转 | [ ] | UI_SPEC §6.3 |
-| 多流同步 (EEG/aEEG/NIRS/Video, ±100ms) | [ ] | UI_SPEC §6.3 |
-| SeekBar 滑块 ≥20×20px 触控 | [ ] | Dev Plan §7.1 |
-| 审计: SEEK 事件 | [ ] | UI_SPEC §10 |
-
-### Sprint 3.6: 质量指示渲染
+### Sprint 3.3: EEG 波形渲染 ✅
 
 | 任务 | 状态 | 说明 |
 |------|------|------|
-| 创建 Rendering/QualityIndicatorRenderer.cs | [ ] | D2D 质量覆盖层 |
-| 数据缺失: 波形断裂 + 灰色背景 (#9E9E9E 50%) | [ ] | UI_SPEC §7 |
-| 信号饱和: 红色高亮 (#F44336 50%) | [ ] | UI_SPEC §7 |
-| 导联脱落: 图标 + "Lead Off" + 橙色背景 (#FF9800 50%) | [ ] | UI_SPEC §7 |
-| 禁止插值填充 | [ ] | UI_SPEC §7 规则 |
-| QualityFlag 枚举映射 | [ ] | Core/Enums/QualityFlag |
+| SweepModeRenderer 替代 EegPolylineRenderer | ✅ | 扫描模式渲染 (per-channel RenderChannel) |
+| EegChannelView 2 通道显示 | ✅ | UI_SPEC §5.1: CH1/CH2 通道 |
+| EEG 波形颜色: EegColorPalette | ✅ | Dev Plan §3.4, 4 通道颜色 |
+| Y 轴线性映射 (±100μV 默认) | ✅ | YAxisRangeUv 属性, WaveformPanel 桥接绑定 |
+| X 轴 15 秒时间窗 | ✅ | UI_SPEC §5.1 |
+| 增益切换即时生效 (< 100ms) | ✅ | SelectedGain → GainMicrovoltsPerCm 绑定 |
+| 通道组合切换 | ✅ | CycleLeadCombinationCommand, ChannelControlPanel 按钮 |
+| EegGainScaler 集成 | ✅ | SweepModeRenderer 参数化 yAxisRangeUv |
+
+### Sprint 3.4: aEEG 趋势渲染 ✅
+
+| 任务 | 状态 | 说明 |
+|------|------|------|
+| AeegTrendRenderer 接入 | ✅ | src/Rendering/AEEG/ |
+| AeegSeriesBuilder 数据构建 | ✅ | Min/Max 包络带构建 |
+| 半对数 Y 轴 (0-10μV 线性, 10-200μV 对数) | ✅ | AeegSemiLogMapper |
+| X 轴 3h 默认, 支持 1h/3h/6h/12h/24h | ✅ | AeegVisibleHours 属性, WaveformPanel 桥接绑定 |
+| AeegFill 颜色 #00E676 40% | ✅ | AeegColorPalette.TrendFill 改为绿色 40% |
+| LOD 金字塔查询集成 | ✅ | 添加 Neo.DSP 引用 |
+| GS 直方图渲染 | ✅ | GsHistogramRenderer, 70%/30% 趋势/直方图布局 |
+| AeegGridAndAxisRenderer 集成 | ✅ | 网格 + 轴标签 |
+
+### Sprint 3.5: SeekBar 时间轴控件 ✅
+
+| 任务 | 状态 | 说明 |
+|------|------|------|
+| SeekBarRenderer (D2D 渲染) | ✅ | 轨道 + 填充 + 手柄 + 时间标签 (替代 SeekBar.xaml) |
+| PlaybackClock 集成 | ✅ | Neo.Playback 同步时钟 |
+| 播放/暂停切换 | ✅ | Toolbar.IsPlaying → PlaybackClock.Start/Pause 绑定 |
+| 拖动 Seek | ✅ | MouseDown/Up/Move → TrySetSeekFromPoint |
+| 点击跳转 | ✅ | UI_SPEC §6.3 |
+| 多流同步 (EEG/aEEG/NIRS/Video, ±100ms) | ✅ | INirsPlaybackSource 接口 + MultiStreamCoordinator 集成 |
+| SeekBar 滑块 ≥20×20px 触控 | ✅ | Dev Plan §7.1 |
+| 审计: SEEK 事件 | ✅ | TrySetSeekFromPoint 记录 AuditEventTypes.Seek |
+
+### Sprint 3.6: 质量指示渲染 ✅
+
+| 任务 | 状态 | 说明 |
+|------|------|------|
+| 创建 Rendering/QualityIndicatorRenderer.cs | ✅ | D2D 质量覆盖层 |
+| 数据缺失: 灰色背景 (#9E9E9E 50%) | ✅ | UI_SPEC §7 |
+| 信号饱和: 红色高亮 (#F44336 50%) | ✅ | UI_SPEC §7 |
+| 导联脱落: 橙色背景 (#FF9800 50%) | ✅ | UI_SPEC §7 |
+| 禁止插值填充 | ✅ | UI_SPEC §7 规则 |
+| QualityFlag 枚举映射 | ✅ | Core/Enums/QualityFlag |
+| EegDataBridge O(1) 质量查询 | ✅ | GetQualitySummary() 运行时计数器 |
 
 ---
 
@@ -323,14 +329,18 @@
 | 创建 Views/Dialogs/PasswordDialog.xaml | [ ] | 400×200px |
 | 密码输入 + 确定/取消 | [ ] | Dev Plan §6.7 |
 
-### Sprint 4.7: DialogService 完整实现
+### Sprint 4.7: DialogService 完整实现 ✅
 
 | 任务 | 状态 | 说明 |
 |------|------|------|
-| DialogService 替换 Stub 实现 | [ ] | Sprint 1.2 的 DialogService.cs |
-| ShowDialog<T> 泛型方法 | [ ] | 统一对话框打开/返回 |
-| 对话框打开 < 500ms | [ ] | UI_SPEC §12 |
-| 所有对话框样式统一 (Colors.xaml/Fonts.xaml) | [ ] | 零硬编码 |
+| DialogService 完整实现 | ✅ | `Services/DialogService.cs` 已实现 |
+| 7个对话框工厂注册 | ✅ | Login, Patient, Filter, Display, UserManagement, History, Password |
+| ShowDialog 方法 | ✅ | 统一对话框打开/返回机制 |
+| ShowMessage 方法 | ✅ | MessageBox 封装 |
+| ShowConfirmation 方法 | ✅ | 确认对话框封装 |
+| 对话框 XAML 骨架 | 🟡 | 7个对话框已创建基础结构，但内容未完成 |
+
+**注**: Sprint 4.1-4.6 的对话框 XAML 文件已创建，但只有基础骨架，具体表单内容、验证逻辑等待实现。
 | 单元测试 | [ ] | DialogService 逻辑 |
 
 ---
@@ -497,17 +507,19 @@
 | 工具栏/导航/状态栏/参数面板 独立 UserControl | ✅ |
 | MainWindow 重构完成 | ✅ |
 | 所有 ViewModel 绑定正常 | ✅ |
-| Sprint 2.1~2.5 全部完成 | ✅ |
 
 ### Phase 3 → Phase 4
 
 | 条件 | 状态 |
 |------|------|
-| EEG/aEEG 波形可渲染显示 | [ ] |
-| SeekBar 时间轴可交互 | [ ] |
-| 质量指示可视化就绪 | [ ] |
-| Neo.Rendering/DSP/Playback 集成 | [ ] |
-| Sprint 3.1~3.6 全部完成 | [ ] |
+| EEG/aEEG 波形可渲染显示 | ✅ |
+| SeekBar 时间轴可交互 | ✅ |
+| 质量指示可视化就绪 | ✅ |
+| Neo.Rendering/DSP/Playback 集成 | ✅ |
+| 增益/通道/时间窗 UI↔渲染器绑定 | ✅ |
+| Play/Pause↔PlaybackClock 绑定 | ✅ |
+| Sprint 3.1~3.6 全部完成 | ✅ |
+| **人工确认** | [ ] |
 
 ### Phase 4 → Phase 5
 
@@ -633,6 +645,54 @@
   MainWindow.xaml 4 个 UserControl 替换完成
   App.xaml.cs 注入 ToolbarViewModel + StatusViewModel + WaveformViewModel
   构建 0 errors 0 warnings, 68/68 tests pass
+
+[2026-02-04] Sprint 3.1: WaveformPanel + D3DImageRenderer 集成
+  WaveformPanel.xaml/cs UserControl (D3D → WriteableBitmap → WPF Image)
+  D3DImageRenderer 升级 ID2D1DeviceContext
+  WaveformRenderHost 渲染桥接 (CompositionTarget.Rendering 60fps)
+  WaveformLayout 6 区域布局 (aEEG×2 + EEG×2 + NIRS + SeekBar)
+  Device Lost 恢复 UI (ErrorOverlay + 双击模拟)
+  MainWindow.xaml 集成 WaveformPanel (ActiveRoute 可见性绑定)
+
+[2026-02-04] Sprint 3.2: EegDataBridge + MockEegSource 数据接入
+  EegDataBridge 扫描模式 (左到右, 15s 周期, 清除带)
+  MockEegSource 160Hz 4 通道接入
+  SweepChannelData 零拷贝数据传递
+  EegDataBridgeTests 23 tests, WaveformRenderHostTests 17 tests
+
+[2026-02-04] Sprint 3.3: SweepModeRenderer EEG 波形渲染
+  SweepModeRenderer per-channel RenderChannel (替代 EegPolylineRenderer)
+  EegColorPalette 4 通道颜色
+  ±200μV Y 轴映射, 下采样性能优化
+  扫描线 (黄色) + 清除带 (暗色)
+
+[2026-02-04] Sprint 3.4: aEEG 趋势渲染
+  AeegTrendRenderer + AeegSeriesBuilder + AeegGridAndAxisRenderer
+  AeegSemiLogMapper 半对数 Y 轴 (0-10μV 线性, 10-200μV 对数)
+  GsHistogramRenderer 直方图 (70%/30% 趋势/直方图布局)
+  LOD 金字塔查询, 3h 默认可见范围
+
+[2026-02-04] Sprint 3.5: SeekBar 时间轴
+  SeekBarRenderer D2D 渲染 (轨道+填充+手柄+时间标签)
+  PlaybackClock 集成, 鼠标拖动/点击 Seek
+  TrySetSeekFromPoint 交互逻辑
+
+[2026-02-04] Sprint 3.6: 质量指示渲染
+  QualityIndicatorRenderer (Missing/Saturated/LeadOff 覆盖层)
+  EegDataBridge O(1) 质量计数器 (AddQualityCounts/RemoveQualityCounts)
+  GetQualitySummary() 集成到渲染循环
+  构建 0 errors, 103/103 tests pass
+
+[2026-02-05] Phase 3 完成: 10 项剩余绑定补齐
+  AeegColorPalette.TrendFill 改为绿色 #00E676 40%
+  WaveformRenderHost 添加 IAuditService, GainMicrovoltsPerCm, YAxisRangeUv, AeegVisibleHours, PlaybackClock
+  SweepModeRenderer.RenderChannel 接受 yAxisRangeUv 参数
+  WaveformPanel 桥接 ViewModel → RenderHost (PropertyChanged 订阅)
+  WaveformViewModel 添加 CycleGain/CycleYAxis/CycleAeegTimeWindow/CycleLeadCombination 命令
+  ChannelControlPanel.xaml 增益/Y轴/aEEG时间窗/导联 改为可点击按钮
+  TrySetSeekFromPoint 添加 SEEK 审计日志
+  INirsPlaybackSource 接口 + MultiStreamCoordinator NIRS 集成
+  测试: 122/122 UI.Tests, 322/322 Rendering.Tests, 44/44 Playback.Tests
 ```
 
 </details>
@@ -728,6 +788,37 @@ dotnet test tests/UI.Tests          → N/N pass
 │                                                                 │
 └─────────────────────────────────────────────────────────────────┘
 ```
+
+---
+
+## 附录：Execution Track（历史执行日志，非进度锚点）
+- Stage A (Top/Left/Parameter): completed.
+- Build: dotnet build src/UI/Neo.UI.csproj -> passed (0 errors, 0 warnings).
+- Test: dotnet test tests/UI.Tests/Neo.UI.Tests.csproj -> passed (122/122).
+- Stage B (Video/NIRS panels): completed.
+- Build: dotnet build src/UI/Neo.UI.csproj -> passed (0 errors, 0 warnings).
+- Test: dotnet test tests/UI.Tests/Neo.UI.Tests.csproj -> passed (132/132).
+- Stage C (Dialogs/DialogService): completed.
+- Build: dotnet build src/UI/Neo.UI.csproj -> passed (0 errors, 0 warnings).
+- Test: dotnet test tests/UI.Tests/Neo.UI.Tests.csproj -> passed (138/138).
+- Stage D (integration/acceptance): completed.
+- Build: dotnet build src/UI/Neo.UI.csproj -> passed (0 errors, 0 warnings).
+- Test: dotnet test tests/UI.Tests/Neo.UI.Tests.csproj -> passed (141/141).
+- Post-stage integration (Video/NIRS runtime adapters): completed.
+- Build: dotnet build src/UI/Neo.UI.csproj -> passed (0 errors, 0 warnings).
+- Test: dotnet test tests/UI.Tests/Neo.UI.Tests.csproj -> passed (146/146).
+- Continue pass (NIRS simulated fallback stream): completed.
+- Build: dotnet build src/UI/Neo.UI.csproj -> passed (0 errors, 0 warnings).
+- Test: dotnet test tests/UI.Tests/Neo.UI.Tests.csproj -> passed (148/148).
+- Waveform realism tuning (clinical-like mock shaping): completed.
+- Build: dotnet build src/UI/Neo.UI.csproj -> passed (0 errors, 0 warnings).
+- Test: dotnet test tests/UI.Tests/Neo.UI.Tests.csproj -> passed (149/149).
+- Waveform realism tuning (burst/suppression/spike shaping): completed.
+- Build: dotnet build src/UI/Neo.UI.csproj -> passed with warnings (Neo.UI.exe locked by running app).
+- Test: dotnet test tests/UI.Tests/Neo.UI.Tests.csproj -> passed (149/149).
+- Waveform visual consistency (dark aEEG/EEG grid/time axis/GS layout): completed.
+- Build: dotnet build src/UI/Neo.UI.csproj -> passed (0 errors, 0 warnings).
+- Test: dotnet test tests/UI.Tests/Neo.UI.Tests.csproj -> passed (149/149).
 
 ---
 

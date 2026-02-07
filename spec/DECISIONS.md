@@ -725,7 +725,7 @@ NIRS 显示的阈值（危险区、警告区、正常区）涉及医学判断，
 
 **状态变更**: 🚫 Blocked → ✅ 已解冻
 
-**解冻依据**: `evidence/ICD_NIRS_RS232_Protocol_Fields.md` 完整提供所有必需证据
+**解冻依据**: `evidence/sources/icd/ICD_NIRS_RS232_Protocol_Fields.md` 完整提供所有必需证据
 
 **证据验收结果**:
 1. ✅ 帧头定义 - ASCII "Ch1" 标记，CR/LF 终止符

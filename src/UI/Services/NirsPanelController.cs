@@ -42,10 +42,10 @@ public sealed class NirsPanelController : IDisposable
 
         if (!_shell.IsAvailable)
         {
-            _viewModel.PanelStatus = $"{_shell.BlockReason} Simulated values active for UI interaction.";
+            _viewModel.PanelStatus = $"{_shell.BlockReason} Blocked. Simulated values active for UI interaction.";
             for (int i = 1; i <= _viewModel.Channels.Count; i++)
             {
-                _viewModel.SetChannelState(i, i <= 3 ? NirsChannelState.Unknown : NirsChannelState.Blocked);
+                _viewModel.SetChannelState(i, i <= 4 ? NirsChannelState.Unknown : NirsChannelState.Blocked);
             }
 
             StartSimulationTimer();
@@ -223,7 +223,7 @@ public sealed class NirsPanelController : IDisposable
                     continue;
                 }
 
-                if (i > 3)
+                if (i > 4)
                 {
                     _viewModel.SetChannelState(i, NirsChannelState.Blocked);
                     continue;
