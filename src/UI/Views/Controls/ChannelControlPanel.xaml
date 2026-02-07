@@ -9,15 +9,21 @@
             BorderThickness="{StaticResource Dim.ParamBorderThickness}">
         <StackPanel Margin="{StaticResource Dim.ParamPanelMargin}">
 
-            <TextBlock Text="Lead"
+            <!-- EEG-1 Configuration (Top Lane) -->
+            <TextBlock Text="EEG-1"
                        Foreground="{StaticResource TextDarkSecondaryBrush}"
                        FontSize="{StaticResource FontSize.StatusBar}"
-                       FontWeight="SemiBold"
+                       FontWeight="Bold"
                        Margin="{StaticResource Dim.ParamLabelMargin}"/>
+
+            <TextBlock Text="Source"
+                       Foreground="{StaticResource TextDarkSecondaryBrush}"
+                       FontSize="{StaticResource FontSize.Caption}"
+                       Margin="8,4,0,2"/>
             <ComboBox Style="{StaticResource ParamComboBoxStyle}"
                       ItemContainerStyle="{StaticResource ParamComboBoxItemStyle}"
-                      ItemsSource="{Binding LeadCombinationOptions}"
-                      SelectedItem="{Binding SelectedLeadCombination, Mode=TwoWay}">
+                      ItemsSource="{Binding SourceOptions}"
+                      SelectedItem="{Binding Eeg1Source, Mode=TwoWay}">
                 <ComboBox.ItemTemplate>
                     <DataTemplate>
                         <TextBlock Text="{Binding Label}"
@@ -25,26 +31,15 @@
                     </DataTemplate>
                 </ComboBox.ItemTemplate>
             </ComboBox>
-            <TextBlock Text="{Binding LeadCh1}"
-                       Foreground="{StaticResource TextDarkTertiaryBrush}"
-                       FontSize="{StaticResource FontSize.Caption}"
-                       Margin="{StaticResource Dim.ParamValueMargin}"/>
-            <TextBlock Text="{Binding LeadCh2}"
-                       Foreground="{StaticResource TextDarkTertiaryBrush}"
-                       FontSize="{StaticResource FontSize.Caption}"
-                       Margin="{StaticResource Dim.ParamValueMargin}"/>
-
-            <Separator Style="{StaticResource DarkSeparatorStyle}"/>
 
             <TextBlock Text="Gain"
                        Foreground="{StaticResource TextDarkSecondaryBrush}"
-                       FontSize="{StaticResource FontSize.StatusBar}"
-                       FontWeight="SemiBold"
-                       Margin="{StaticResource Dim.ParamSectionMargin}"/>
+                       FontSize="{StaticResource FontSize.Caption}"
+                       Margin="8,8,0,2"/>
             <ComboBox Style="{StaticResource ParamComboBoxStyle}"
                       ItemContainerStyle="{StaticResource ParamComboBoxItemStyle}"
                       ItemsSource="{Binding GainOptions}"
-                      SelectedItem="{Binding SelectedGain, Mode=TwoWay}">
+                      SelectedItem="{Binding Eeg1Gain, Mode=TwoWay}">
                 <ComboBox.ItemTemplate>
                     <DataTemplate>
                         <TextBlock Text="{Binding StringFormat={}{0} uV/cm}"
@@ -53,17 +48,14 @@
                 </ComboBox.ItemTemplate>
             </ComboBox>
 
-            <Separator Style="{StaticResource DarkSeparatorStyle}"/>
-
             <TextBlock Text="Range"
                        Foreground="{StaticResource TextDarkSecondaryBrush}"
-                       FontSize="{StaticResource FontSize.StatusBar}"
-                       FontWeight="SemiBold"
-                       Margin="{StaticResource Dim.ParamSectionMargin}"/>
+                       FontSize="{StaticResource FontSize.Caption}"
+                       Margin="8,8,0,2"/>
             <ComboBox Style="{StaticResource ParamComboBoxStyle}"
                       ItemContainerStyle="{StaticResource ParamComboBoxItemStyle}"
                       ItemsSource="{Binding YAxisOptions}"
-                      SelectedItem="{Binding SelectedYAxis, Mode=TwoWay}">
+                      SelectedItem="{Binding Eeg1Range, Mode=TwoWay}">
                 <ComboBox.ItemTemplate>
                     <DataTemplate>
                         <TextBlock Text="{Binding StringFormat={}+/-{0} uV}"
@@ -74,6 +66,64 @@
 
             <Separator Style="{StaticResource DarkSeparatorStyle}"/>
 
+            <!-- EEG-2 Configuration (Bottom Lane) -->
+            <TextBlock Text="EEG-2"
+                       Foreground="{StaticResource TextDarkSecondaryBrush}"
+                       FontSize="{StaticResource FontSize.StatusBar}"
+                       FontWeight="Bold"
+                       Margin="{StaticResource Dim.ParamSectionMargin}"/>
+
+            <TextBlock Text="Source"
+                       Foreground="{StaticResource TextDarkSecondaryBrush}"
+                       FontSize="{StaticResource FontSize.Caption}"
+                       Margin="8,4,0,2"/>
+            <ComboBox Style="{StaticResource ParamComboBoxStyle}"
+                      ItemContainerStyle="{StaticResource ParamComboBoxItemStyle}"
+                      ItemsSource="{Binding SourceOptions}"
+                      SelectedItem="{Binding Eeg2Source, Mode=TwoWay}">
+                <ComboBox.ItemTemplate>
+                    <DataTemplate>
+                        <TextBlock Text="{Binding Label}"
+                                   Foreground="{StaticResource TextOnDarkBrush}"/>
+                    </DataTemplate>
+                </ComboBox.ItemTemplate>
+            </ComboBox>
+
+            <TextBlock Text="Gain"
+                       Foreground="{StaticResource TextDarkSecondaryBrush}"
+                       FontSize="{StaticResource FontSize.Caption}"
+                       Margin="8,8,0,2"/>
+            <ComboBox Style="{StaticResource ParamComboBoxStyle}"
+                      ItemContainerStyle="{StaticResource ParamComboBoxItemStyle}"
+                      ItemsSource="{Binding GainOptions}"
+                      SelectedItem="{Binding Eeg2Gain, Mode=TwoWay}">
+                <ComboBox.ItemTemplate>
+                    <DataTemplate>
+                        <TextBlock Text="{Binding StringFormat={}{0} uV/cm}"
+                                   Foreground="{StaticResource TextOnDarkBrush}"/>
+                    </DataTemplate>
+                </ComboBox.ItemTemplate>
+            </ComboBox>
+
+            <TextBlock Text="Range"
+                       Foreground="{StaticResource TextDarkSecondaryBrush}"
+                       FontSize="{StaticResource FontSize.Caption}"
+                       Margin="8,8,0,2"/>
+            <ComboBox Style="{StaticResource ParamComboBoxStyle}"
+                      ItemContainerStyle="{StaticResource ParamComboBoxItemStyle}"
+                      ItemsSource="{Binding YAxisOptions}"
+                      SelectedItem="{Binding Eeg2Range, Mode=TwoWay}">
+                <ComboBox.ItemTemplate>
+                    <DataTemplate>
+                        <TextBlock Text="{Binding StringFormat={}+/-{0} uV}"
+                                   Foreground="{StaticResource TextOnDarkBrush}"/>
+                    </DataTemplate>
+                </ComboBox.ItemTemplate>
+            </ComboBox>
+
+            <Separator Style="{StaticResource DarkSeparatorStyle}"/>
+
+            <!-- Filter (Global) -->
             <TextBlock Text="Filter"
                        Foreground="{StaticResource TextDarkSecondaryBrush}"
                        FontSize="{StaticResource FontSize.StatusBar}"
@@ -94,6 +144,7 @@
 
             <Separator Style="{StaticResource DarkSeparatorStyle}"/>
 
+            <!-- Sweep (Global) -->
             <TextBlock Text="Sweep"
                        Foreground="{StaticResource TextDarkSecondaryBrush}"
                        FontSize="{StaticResource FontSize.StatusBar}"
@@ -107,6 +158,7 @@
 
             <Separator Style="{StaticResource DarkSeparatorStyle}"/>
 
+            <!-- aEEG Window (Global) -->
             <TextBlock Text="aEEG Window"
                        Foreground="{StaticResource TextDarkSecondaryBrush}"
                        FontSize="{StaticResource FontSize.StatusBar}"
@@ -126,6 +178,7 @@
 
             <Separator Style="{StaticResource DarkSeparatorStyle}"/>
 
+            <!-- GS Histogram (Global) -->
             <CheckBox Content="Show GS Histogram"
                       IsChecked="{Binding ShowGsHistogram, Mode=TwoWay}"
                       Foreground="{StaticResource TextOnDarkBrush}"
