@@ -196,12 +196,14 @@ public class MultiStreamCoordinatorTests
         Thread.Sleep(200);
 
         // Seek to 5 seconds
+        eegSource.Stop();
         clock.Pause();
         clock.SeekTo(5_000_000);
         eegSource.NotifySeek(5_000_000);
         received.Clear();
 
         // Resume
+        eegSource.Start();
         clock.Start();
         Thread.Sleep(200);
         eegSource.Stop();

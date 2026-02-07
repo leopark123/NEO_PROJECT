@@ -19,6 +19,7 @@ public sealed class ServiceRegistry
     public INavigationService Navigation { get; }
     public IDialogService Dialog { get; }
     public IAuditService Audit { get; }
+    public IThemeService Theme { get; }
 
     public ServiceRegistry()
     {
@@ -26,5 +27,6 @@ public sealed class ServiceRegistry
         Navigation = new NavigationService(Routes);
         Dialog = new DialogService();
         Audit = new AuditServiceAdapter();
+        Theme = new ThemeService();
     }
 }

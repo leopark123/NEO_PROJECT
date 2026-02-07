@@ -6,7 +6,7 @@ using Vortice.Mathematics;
 namespace Neo.Rendering.AEEG;
 
 /// <summary>
-/// aEEG 渲染颜色定义。
+/// aEEG 渲染颜色定义（支持主题切换）。
 /// </summary>
 /// <remarks>
 /// 依据: ARCHITECTURE.md §5
@@ -20,72 +20,88 @@ namespace Neo.Rendering.AEEG;
 /// </remarks>
 public static class AeegColorPalette
 {
-    // ============================================
-    // 趋势线颜色
-    // ============================================
+    private static AeegThemeType _currentTheme = AeegThemeType.Apple;
+    private static AeegTheme _theme = AeegTheme.AppleTheme;
 
     /// <summary>
-    /// 趋势填充色（半透明蓝色）。
+    /// 切换主题
     /// </summary>
-    public static readonly Color4 TrendFill = new(0.2f, 0.5f, 0.8f, 0.3f);
+    public static void SetTheme(AeegThemeType themeType)
+    {
+        _currentTheme = themeType;
+        _theme = AeegTheme.GetTheme(themeType);
+    }
 
     /// <summary>
-    /// 上边界线颜色（深蓝色）。
+    /// 获取当前主题
     /// </summary>
-    public static readonly Color4 UpperBound = new(0.1f, 0.3f, 0.7f, 1.0f);
-
-    /// <summary>
-    /// 下边界线颜色（浅蓝色）。
-    /// </summary>
-    public static readonly Color4 LowerBound = new(0.3f, 0.6f, 0.9f, 1.0f);
-
+    public static AeegThemeType CurrentTheme => _currentTheme;
     // ============================================
-    // 网格和轴线颜色
+    // 趋势线颜色（动态主题）
     // ============================================
 
     /// <summary>
-    /// 主刻度线颜色。
+    /// 趋势填充色（根据主题动态变化）。
     /// </summary>
-    public static readonly Color4 MajorGridLine = new(0.4f, 0.4f, 0.4f, 0.8f);
+    public static Color4 TrendFill => _theme.TrendFill;
 
     /// <summary>
-    /// 次刻度线颜色。
+    /// 上边界线颜色（表示max振幅）。
     /// </summary>
-    public static readonly Color4 MinorGridLine = new(0.5f, 0.5f, 0.5f, 0.4f);
+    public static Color4 UpperBound => _theme.UpperBound;
+
+    /// <summary>
+    /// 下边界线颜色（表示min振幅）。
+    /// </summary>
+    public static Color4 LowerBound => _theme.LowerBound;
+
+    // ============================================
+    // 网格和轴线颜色（动态主题）
+    // ============================================
+
+    /// <summary>
+    /// 主刻度线颜色（根据主题动态变化）。
+    /// </summary>
+    public static Color4 MajorGridLine => _theme.MajorGridLine;
+
+    /// <summary>
+    /// 次刻度线颜色（根据主题动态变化）。
+    /// </summary>
+    public static Color4 MinorGridLine => _theme.MinorGridLine;
 
     /// <summary>
     /// 分界线颜色（10 μV）。
     /// </summary>
-    public static readonly Color4 BoundaryLine = new(0.8f, 0.2f, 0.2f, 0.6f);
+    public static Color4 BoundaryLine => _theme.BoundaryLine;
 
     /// <summary>
     /// 轴线颜色。
     /// </summary>
-    public static readonly Color4 AxisLine = new(0.3f, 0.3f, 0.3f, 1.0f);
+    public static Color4 AxisLine => _theme.AxisLine;
 
     /// <summary>
     /// 轴标签颜色。
     /// </summary>
-    public static readonly Color4 AxisLabel = new(0.2f, 0.2f, 0.2f, 1.0f);
+    public static Color4 AxisLabel => _theme.AxisLabel;
 
     // ============================================
-    // 背景和遮罩颜色
+    // 背景和遮罩颜色（动态主题）
     // ============================================
 
     /// <summary>
-    /// 背景颜色。
+    /// 背景颜色（根据主题动态变化）。
     /// </summary>
-    public static readonly Color4 Background = new(0.98f, 0.98f, 0.98f, 1.0f);
+    public static Color4 Background => _theme.Background;
 
     /// <summary>
-    /// 间隙遮罩颜色（灰色半透明）。
+    /// 间隙遮罩颜色。
     /// </summary>
-    public static readonly Color4 GapMask = new(0.5f, 0.5f, 0.5f, 0.3f);
+    public static Color4 GapMask => _theme.GapMask;
 
     /// <summary>
-    /// 饱和标记颜色（红色）。
+    /// 饱和标记颜色。
     /// </summary>
-    public static readonly Color4 SaturationMarker = new(0.9f, 0.2f, 0.2f, 1.0f);
+    public static Color4 SaturationMarker => _theme.SaturationMarker;
 
     // ============================================
     // 通道颜色

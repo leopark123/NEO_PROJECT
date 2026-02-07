@@ -7,7 +7,28 @@
       "Bash(timeout 5 dotnet run:*)",
       "Bash(handle PROJECT_STATE.md)",
       "Bash(python3:*)",
-      "Bash(taskkill:*)"
+      "Bash(taskkill:*)",
+      "Bash(wc:*)",
+      "Bash(dotnet run:*)",
+      "Bash(tasklist:*)",
+      "Bash(ls:*)",
+      "Bash(start cmd /c \"dotnet run --project src/UI/Neo.UI.csproj --no-build\")",
+      "Bash(Get-Process)",
+      "Bash(Where-Object {$_ProcessName -like \"*Neo*\"})",
+      "Bash(Select-Object ProcessName, Id, StartTime)",
+      "Bash(ps:*)",
+      "Bash(cmd //c \"start /B F:\\\\NEO_PROJECT\\\\src\\\\UI\\\\bin\\\\Debug\\\\net9.0-windows\\\\Neo.UI.exe\")",
+      "Bash(./Neo.UI.exe)",
+      "Bash(findstr:*)",
+      "Bash(echo:*)",
+      "Bash(start Neo.UI.exe)",
+      "Bash(cmd.exe /c start \"\" \"Neo.UI.exe\")",
+      "Bash(dotnet clean:*)",
+      "Bash(powershell \"Get-Process | Where-Object {$_ProcessName -like ''*Neo.UI*''} | Select-Object ProcessName,Id,WorkingSet64 | Format-Table\")",
+      "Bash(powershell \"Get-Process | Where-Object {$_.ProcessName -eq ''Neo.UI''}\")",
+      "Bash(git add:*)",
+      "Bash(git commit -m \"$\\(cat <<''EOF''\nComplete S3-00 NIRS integration with real-time UI data display\n\nImplemented complete NIRS \\(Near-Infrared Spectroscopy\\) integration for Nonin X-100M device:\n\nCore implementation:\n- NirsProtocolParser: ASCII text protocol with CRC-16 CCITT validation\n- Rs232NirsSource: Serial port data source \\(57600 baud, 1 Hz sampling\\)\n- MockNirsSource: Physiological waveform simulation for testing without hardware\n- NirsIntegrationShell: Quality flag mapping \\(ValidMask → QualityFlag\\)\n\nUI integration:\n- NirsPanelController: Event-driven data handling with Dispatcher thread sync\n- NirsViewModel: 6-channel state management \\(4 physical + 2 virtual\\)\n- Real-time percentage display updating every second\n- Fault detection and status indicators\n\nTesting:\n- 24 unit tests \\(basic + robustness\\)\n- Protocol parsing, CRC validation, concurrent access\n- Frame truncation, format errors, boundary conditions\n\nDocumentation:\n- 800+ line troubleshooting guide\n- ICD protocol specification \\(evidence/sources/icd/\\)\n- Implementation handoff documentation\n\nFixed critical data flow issue: App.xaml.cs now uses NirsWiring with MockNirsSource instead of empty NirsIntegrationShell, enabling real-time data updates in UI.\n\nCo-Authored-By: Claude Sonnet 4.5 <noreply@anthropic.com>\nEOF\n\\)\")",
+      "Bash(powershell \"Get-Process | Where-Object {$_ProcessName -eq ''Neo.UI''} | Select-Object ProcessName,Id,@{Name=''MemoryMB'';Expression={[math]::Round\\($_WorkingSet64/1MB,2\\)}},@{Name=''CPU'';Expression={$_CPU}},@{Name=''Threads'';Expression={$_Threads.Count}} | Format-Table -AutoSize\")"
     ]
   }
 }

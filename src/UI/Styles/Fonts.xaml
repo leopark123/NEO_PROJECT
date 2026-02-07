@@ -7,37 +7,37 @@
     <!-- Source: NEO_UI_Development_Plan_WPF.md §4 (frozen)               -->
     <!-- ================================================================ -->
 
-    <!-- ── Font families ── -->
-    <FontFamily x:Key="Font.UI">Microsoft YaHei UI</FontFamily>
+    <!-- ── Font families (Apple-style: Segoe UI similar to SF Pro) ── -->
+    <FontFamily x:Key="Font.UI">Segoe UI</FontFamily>
     <FontFamily x:Key="Font.Mono">Consolas</FontFamily>
 
-    <!-- ── Font sizes (Dev Plan §4) ── -->
-    <sys:Double x:Key="FontSize.Title">24</sys:Double>
-    <sys:Double x:Key="FontSize.Subtitle">18</sys:Double>
-    <sys:Double x:Key="FontSize.Body">14</sys:Double>
-    <sys:Double x:Key="FontSize.ParamValue">13</sys:Double>
-    <sys:Double x:Key="FontSize.Small">12</sys:Double>
-    <sys:Double x:Key="FontSize.StatusBar">11</sys:Double>
-    <sys:Double x:Key="FontSize.Caption">10</sys:Double>
-    <sys:Double x:Key="FontSize.NavLabel">9</sys:Double>
-    <sys:Double x:Key="FontSize.MonoValue">16</sys:Double>
-    <sys:Double x:Key="FontSize.MonoLabel">12</sys:Double>
+    <!-- ── Font sizes (Apple-style scale) ── -->
+    <sys:Double x:Key="FontSize.Title">28</sys:Double>
+    <sys:Double x:Key="FontSize.Subtitle">20</sys:Double>
+    <sys:Double x:Key="FontSize.Body">15</sys:Double>
+    <sys:Double x:Key="FontSize.ParamValue">14</sys:Double>
+    <sys:Double x:Key="FontSize.Small">13</sys:Double>
+    <sys:Double x:Key="FontSize.StatusBar">12</sys:Double>
+    <sys:Double x:Key="FontSize.Caption">11</sys:Double>
+    <sys:Double x:Key="FontSize.NavLabel">10</sys:Double>
+    <sys:Double x:Key="FontSize.MonoValue">17</sys:Double>
+    <sys:Double x:Key="FontSize.MonoLabel">13</sys:Double>
 
     <!-- ── Preset TextBlock styles ── -->
 
-    <!-- 标题 24px Bold -->
+    <!-- 标题 28px Semibold (Apple-style) -->
     <Style x:Key="TitleTextStyle" TargetType="TextBlock">
         <Setter Property="FontFamily" Value="{StaticResource Font.UI}"/>
         <Setter Property="FontSize"   Value="{StaticResource FontSize.Title}"/>
-        <Setter Property="FontWeight" Value="Bold"/>
+        <Setter Property="FontWeight" Value="Semibold"/>
         <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}"/>
     </Style>
 
-    <!-- 副标题 18px Medium -->
+    <!-- 副标题 20px Semibold (Apple-style) -->
     <Style x:Key="SubtitleTextStyle" TargetType="TextBlock">
         <Setter Property="FontFamily" Value="{StaticResource Font.UI}"/>
         <Setter Property="FontSize"   Value="{StaticResource FontSize.Subtitle}"/>
-        <Setter Property="FontWeight" Value="Medium"/>
+        <Setter Property="FontWeight" Value="Semibold"/>
         <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}"/>
     </Style>
 

@@ -1,4 +1,4 @@
-// Rs232ProtocolParserTests.cs
+﻿// Rs232ProtocolParserTests.cs
 // EEG RS232 协议解析器单元测试
 // 测试场景: CRC校验、半包处理、粘包处理
 
@@ -7,6 +7,7 @@ namespace Neo.Tests.DataSources.Rs232;
 using Neo.Core.Enums;
 using Neo.Core.Models;
 using Neo.DataSources.Rs232;
+using Xunit;
 
 /// <summary>
 /// EegProtocolParser 单元测试。
@@ -59,6 +60,7 @@ public class Rs232ProtocolParserTests
     /// <summary>
     /// 测试: CRC 校验通过时应触发 PacketParsed 事件。
     /// </summary>
+    [Fact]
     public void CrcValid_ShouldTriggerPacketParsed()
     {
         // Arrange
@@ -73,8 +75,8 @@ public class Rs232ProtocolParserTests
 
         // Assert
         Assert.NotNull(receivedSample);
-        Assert.Equal(1000, receivedSample.TimestampUs);
-        Assert.Equal(100 * 0.076, receivedSample.Ch1Uv, precision: 5);
+        Assert.Equal(1000, receivedSample!.Value.TimestampUs);
+        Assert.Equal(100 * 0.076, receivedSample!.Value.Ch1Uv, precision: 5);
         Assert.Equal(1, parser.PacketsReceived);
         Assert.Equal(0, parser.CrcErrors);
     }
@@ -82,6 +84,7 @@ public class Rs232ProtocolParserTests
     /// <summary>
     /// 测试: CRC 校验失败时应触发 CrcErrorOccurred 事件。
     /// </summary>
+    [Fact]
     public void CrcInvalid_ShouldTriggerCrcError()
     {
         // Arrange
@@ -111,6 +114,7 @@ public class Rs232ProtocolParserTests
     /// <summary>
     /// 测试: 数据包分两次到达（半包）应正确解析。
     /// </summary>
+    [Fact]
     public void HalfPacket_ShouldParseCorrectly()
     {
         // Arrange
@@ -132,12 +136,13 @@ public class Rs232ProtocolParserTests
 
         // Assert
         Assert.NotNull(receivedSample);
-        Assert.Equal(200 * 0.076, receivedSample.Ch1Uv, precision: 5);
+        Assert.Equal(200 * 0.076, receivedSample!.Value.Ch1Uv, precision: 5);
     }
 
     /// <summary>
     /// 测试: 单字节逐个到达应正确解析。
     /// </summary>
+    [Fact]
     public void ByteByByte_ShouldParseCorrectly()
     {
         // Arrange
@@ -165,6 +170,7 @@ public class Rs232ProtocolParserTests
     /// <summary>
     /// 测试: 两个完整数据包连续到达（粘包）应分别解析。
     /// </summary>
+    [Fact]
     public void StickyPackets_ShouldParseBoth()
     {
         // Arrange
@@ -193,6 +199,7 @@ public class Rs232ProtocolParserTests
     /// <summary>
     /// 测试: 粘包中间有垃圾数据应跳过并继续解析。
     /// </summary>
+    [Fact]
     public void StickyPacketsWithGarbage_ShouldSkipAndContinue()
     {
         // Arrange
@@ -225,6 +232,7 @@ public class Rs232ProtocolParserTests
     /// <summary>
     /// 测试: 帧头不完整时应等待更多数据。
     /// </summary>
+    [Fact]
     public void IncompleteHeader_ShouldWait()
     {
         // Arrange
@@ -243,6 +251,7 @@ public class Rs232ProtocolParserTests
     /// <summary>
     /// 测试: 错误的第二字节应重置状态机。
     /// </summary>
+    [Fact]
     public void WrongSecondByte_ShouldReset()
     {
         // Arrange
@@ -305,6 +314,7 @@ public class Rs232ProtocolParserTests
     /// 测试: 4 通道数据应正确解析。
     /// 来源: DSP_SPEC.md L54-56, ACCEPTANCE_TESTS.md L477
     /// </summary>
+    [Fact]
     public void FourChannels_ShouldParseCorrectly()
     {
         // Arrange
@@ -323,23 +333,24 @@ public class Rs232ProtocolParserTests
 
         // CH1, CH2, CH3 直接从 data 解析
         // 来源: DSP_SPEC.md L54-56
-        Assert.Equal(100 * 0.076, receivedSample.Ch1Uv, precision: 5);
-        Assert.Equal(50 * 0.076, receivedSample.Ch2Uv, precision: 5);
-        Assert.Equal(75 * 0.076, receivedSample.Ch3Uv, precision: 5);
+        Assert.Equal(100 * 0.076, receivedSample!.Value.Ch1Uv, precision: 5);
+        Assert.Equal(50 * 0.076, receivedSample!.Value.Ch2Uv, precision: 5);
+        Assert.Equal(75 * 0.076, receivedSample!.Value.Ch3Uv, precision: 5);
 
         // CH4 = CH1 - CH2 (计算通道)
         // 来源: ACCEPTANCE_TESTS.md L477
         double expectedCh4 = (100 - 50) * 0.076;
-        Assert.Equal(expectedCh4, receivedSample.Ch4Uv, precision: 5);
+        Assert.Equal(expectedCh4, receivedSample!.Value.Ch4Uv, precision: 5);
 
         // 质量标志应为 Normal
-        Assert.Equal(QualityFlag.Normal, receivedSample.QualityFlags);
+        Assert.Equal(QualityFlag.Normal, receivedSample!.Value.QualityFlags);
     }
 
     /// <summary>
     /// 测试: CH4 计算公式 (CH1 - CH2)。
     /// 来源: ACCEPTANCE_TESTS.md L477
     /// </summary>
+    [Fact]
     public void Ch4Calculation_ShouldBeCorrect()
     {
         // Arrange
@@ -356,7 +367,7 @@ public class Rs232ProtocolParserTests
         // Assert
         Assert.NotNull(receivedSample);
         double expectedCh4 = (200 - 80) * 0.076;
-        Assert.Equal(expectedCh4, receivedSample.Ch4Uv, precision: 5);
+        Assert.Equal(expectedCh4, receivedSample!.Value.Ch4Uv, precision: 5);
     }
 
     #endregion
@@ -395,6 +406,7 @@ public class Rs232ProtocolParserTests
     /// 测试: GS Counter = 255 表示无效。
     /// 来源: clogik_50_ser.cpp L75: if (data1[16] != 255)
     /// </summary>
+    [Fact]
     public void GsCounter255_ShouldIndicateInvalid()
     {
         // Arrange
@@ -417,6 +429,7 @@ public class Rs232ProtocolParserTests
     /// 测试: GS Counter = 229 表示一个 GS 周期结束。
     /// 来源: clogik_50_ser.cpp L80: if (data[16]==229) // time to draw aEEG GS
     /// </summary>
+    [Fact]
     public void GsCounter229_ShouldIndicateCycleEnd()
     {
         // Arrange
@@ -439,6 +452,7 @@ public class Rs232ProtocolParserTests
     /// 测试: GS Counter 0-228 为正常值。
     /// 来源: clogik_50_ser.cpp L76: counter 0-229
     /// </summary>
+    [Fact]
     public void GsCounterNormal_ShouldBeInRange()
     {
         // Arrange
@@ -464,6 +478,7 @@ public class Rs232ProtocolParserTests
     /// <summary>
     /// 测试: Reset 后应重新开始解析。
     /// </summary>
+    [Fact]
     public void Reset_ShouldClearState()
     {
         // Arrange
@@ -620,6 +635,7 @@ public class NirsProtocolParserTests
     /// 输入: "123456789" (ASCII)
     /// 期望输出: 0x31C3
     /// </remarks>
+    [Fact]
     public void Crc16Ccitt_TestVector_ShouldMatch()
     {
         // Arrange
@@ -635,6 +651,7 @@ public class NirsProtocolParserTests
     /// <summary>
     /// 测试: CRC 校验通过时应触发 PacketParsed 事件。
     /// </summary>
+    [Fact]
     public void NirsCrcValid_ShouldTriggerPacketParsed()
     {
         // Arrange
@@ -649,11 +666,11 @@ public class NirsProtocolParserTests
 
         // Assert
         Assert.NotNull(receivedSample);
-        Assert.Equal(1000, receivedSample.TimestampUs);
-        Assert.Equal(72.0, receivedSample.Ch1Percent, precision: 1);
-        Assert.Equal(68.0, receivedSample.Ch2Percent, precision: 1);
-        Assert.Equal(70.0, receivedSample.Ch3Percent, precision: 1);
-        Assert.Equal(65.0, receivedSample.Ch4Percent, precision: 1);
+        Assert.Equal(1000, receivedSample!.Value.TimestampUs);
+        Assert.Equal(72.0, receivedSample!.Value.Ch1Percent, precision: 1);
+        Assert.Equal(68.0, receivedSample!.Value.Ch2Percent, precision: 1);
+        Assert.Equal(70.0, receivedSample!.Value.Ch3Percent, precision: 1);
+        Assert.Equal(65.0, receivedSample!.Value.Ch4Percent, precision: 1);
         Assert.Equal(1, parser.PacketsReceived);
         Assert.Equal(0, parser.CrcErrors);
     }
@@ -661,6 +678,7 @@ public class NirsProtocolParserTests
     /// <summary>
     /// 测试: CRC 校验失败时应触发 CrcErrorOccurred 事件。
     /// </summary>
+    [Fact]
     public void NirsCrcInvalid_ShouldTriggerCrcError()
     {
         // Arrange
@@ -694,6 +712,7 @@ public class NirsProtocolParserTests
     /// 来源: ICD §4.2.4 L153-157
     /// 值域: 0-100%
     /// </remarks>
+    [Fact]
     public void NirsRso2_ValidValues_ShouldParse()
     {
         // Arrange
@@ -708,13 +727,13 @@ public class NirsProtocolParserTests
 
         // Assert
         Assert.NotNull(receivedSample);
-        Assert.Equal(85.0, receivedSample.Ch1Percent, precision: 1);
-        Assert.Equal(90.0, receivedSample.Ch2Percent, precision: 1);
-        Assert.Equal(78.0, receivedSample.Ch3Percent, precision: 1);
-        Assert.Equal(82.0, receivedSample.Ch4Percent, precision: 1);
+        Assert.Equal(85.0, receivedSample!.Value.Ch1Percent, precision: 1);
+        Assert.Equal(90.0, receivedSample!.Value.Ch2Percent, precision: 1);
+        Assert.Equal(78.0, receivedSample!.Value.Ch3Percent, precision: 1);
+        Assert.Equal(82.0, receivedSample!.Value.Ch4Percent, precision: 1);
 
         // 所有 4 个物理通道有效
-        Assert.Equal(0x0F, receivedSample.ValidMask); // bit0-3 = 1
+        Assert.Equal(0x0F, receivedSample!.Value.ValidMask); // bit0-3 = 1
     }
 
     /// <summary>
@@ -724,6 +743,7 @@ public class NirsProtocolParserTests
     /// 来源: ICD §4.2.4 L155-156
     /// "---" 表示探头未连接或信号无效
     /// </remarks>
+    [Fact]
     public void NirsRso2_InvalidMarker_ShouldBeInvalid()
     {
         // Arrange
@@ -739,13 +759,13 @@ public class NirsProtocolParserTests
 
         // Assert
         Assert.NotNull(receivedSample);
-        Assert.Equal(72.0, receivedSample.Ch1Percent, precision: 1);
-        Assert.Equal(0.0, receivedSample.Ch2Percent, precision: 1); // 无效值为 0
-        Assert.Equal(68.0, receivedSample.Ch3Percent, precision: 1);
-        Assert.Equal(0.0, receivedSample.Ch4Percent, precision: 1); // 无效值为 0
+        Assert.Equal(72.0, receivedSample!.Value.Ch1Percent, precision: 1);
+        Assert.Equal(0.0, receivedSample!.Value.Ch2Percent, precision: 1); // 无效值为 0
+        Assert.Equal(68.0, receivedSample!.Value.Ch3Percent, precision: 1);
+        Assert.Equal(0.0, receivedSample!.Value.Ch4Percent, precision: 1); // 无效值为 0
 
         // ValidMask: bit0=1 (Ch1), bit1=0 (Ch2), bit2=1 (Ch3), bit3=0 (Ch4)
-        Assert.Equal(0x05, receivedSample.ValidMask); // 0b00000101
+        Assert.Equal(0x05, receivedSample!.Value.ValidMask); // 0b00000101
     }
 
     /// <summary>
@@ -756,6 +776,7 @@ public class NirsProtocolParserTests
     /// NEO 需要 6 通道，但 Nonin X-100M 只有 4 物理通道
     /// Ch5-Ch6 为虚拟通道，状态为 DEVICE_NOT_SUPPORTED
     /// </remarks>
+    [Fact]
     public void NirsVirtualChannels_ShouldBeInvalid()
     {
         // Arrange
@@ -772,11 +793,11 @@ public class NirsProtocolParserTests
         Assert.NotNull(receivedSample);
 
         // Ch5-Ch6 值为 0
-        Assert.Equal(0.0, receivedSample.Ch5Percent, precision: 1);
-        Assert.Equal(0.0, receivedSample.Ch6Percent, precision: 1);
+        Assert.Equal(0.0, receivedSample!.Value.Ch5Percent, precision: 1);
+        Assert.Equal(0.0, receivedSample!.Value.Ch6Percent, precision: 1);
 
         // ValidMask: bit4 和 bit5 应为 0 (无效)
-        byte validMask = receivedSample.ValidMask;
+        byte validMask = receivedSample!.Value.ValidMask;
         Assert.Equal(0, validMask & 0x10); // bit4 = 0
         Assert.Equal(0, validMask & 0x20); // bit5 = 0
     }
@@ -788,6 +809,7 @@ public class NirsProtocolParserTests
     /// <summary>
     /// 测试: 帧分多次到达应正确解析。
     /// </summary>
+    [Fact]
     public void NirsHalfFrame_ShouldParseCorrectly()
     {
         // Arrange
@@ -808,12 +830,13 @@ public class NirsProtocolParserTests
 
         // Assert
         Assert.NotNull(receivedSample);
-        Assert.Equal(75.0, receivedSample.Ch1Percent, precision: 1);
+        Assert.Equal(75.0, receivedSample!.Value.Ch1Percent, precision: 1);
     }
 
     /// <summary>
     /// 测试: 两帧连续到达（粘包）应分别解析。
     /// </summary>
+    [Fact]
     public void NirsStickyFrames_ShouldParseBoth()
     {
         // Arrange
@@ -841,6 +864,7 @@ public class NirsProtocolParserTests
     /// <summary>
     /// 测试: 缺少 CKSUM 字段应解析失败。
     /// </summary>
+    [Fact]
     public void NirsMissingCksum_ShouldFail()
     {
         // Arrange
@@ -864,6 +888,7 @@ public class NirsProtocolParserTests
     /// <summary>
     /// 测试: 缺少 rSO2 字段应解析失败。
     /// </summary>
+    [Fact]
     public void NirsMissingRso2_ShouldFail()
     {
         // Arrange
@@ -893,6 +918,7 @@ public class NirsProtocolParserTests
     /// <summary>
     /// 测试: Reset 后应清除缓冲区状态。
     /// </summary>
+    [Fact]
     public void NirsReset_ShouldClearBuffer()
     {
         // Arrange
@@ -921,6 +947,7 @@ public class NirsProtocolParserTests
     /// <summary>
     /// 测试: rSO2 = 0% 应有效。
     /// </summary>
+    [Fact]
     public void NirsRso2_ZeroPercent_ShouldBeValid()
     {
         // Arrange
@@ -935,13 +962,14 @@ public class NirsProtocolParserTests
 
         // Assert
         Assert.NotNull(receivedSample);
-        Assert.Equal(0.0, receivedSample.Ch1Percent, precision: 1);
-        Assert.Equal(0x0F, receivedSample.ValidMask); // 全部有效
+        Assert.Equal(0.0, receivedSample!.Value.Ch1Percent, precision: 1);
+        Assert.Equal(0x0F, receivedSample!.Value.ValidMask); // 全部有效
     }
 
     /// <summary>
     /// 测试: rSO2 = 100% 应有效。
     /// </summary>
+    [Fact]
     public void NirsRso2_HundredPercent_ShouldBeValid()
     {
         // Arrange
@@ -956,13 +984,14 @@ public class NirsProtocolParserTests
 
         // Assert
         Assert.NotNull(receivedSample);
-        Assert.Equal(100.0, receivedSample.Ch1Percent, precision: 1);
-        Assert.Equal(0x0F, receivedSample.ValidMask);
+        Assert.Equal(100.0, receivedSample!.Value.Ch1Percent, precision: 1);
+        Assert.Equal(0x0F, receivedSample!.Value.ValidMask);
     }
 
     /// <summary>
     /// 测试: rSO2 > 100% 应无效。
     /// </summary>
+    [Fact]
     public void NirsRso2_OutOfRange_ShouldBeInvalid()
     {
         // Arrange
@@ -978,7 +1007,7 @@ public class NirsProtocolParserTests
         // Assert
         Assert.NotNull(receivedSample);
         // Ch1 超出范围应标记为无效
-        Assert.Equal(0, receivedSample.ValidMask & 0x01); // bit0 = 0 (Ch1 无效)
+        Assert.Equal(0, receivedSample!.Value.ValidMask & 0x01); // bit0 = 0 (Ch1 无效)
     }
 
     #endregion
@@ -1001,6 +1030,7 @@ public class NirsProtocolParserRobustnessTests
     /// <summary>
     /// 测试: 只有 CR 没有 LF 应不触发解析。
     /// </summary>
+    [Fact]
     public void NirsOnlyCR_ShouldNotParse()
     {
         // Arrange
@@ -1023,6 +1053,7 @@ public class NirsProtocolParserRobustnessTests
     /// <summary>
     /// 测试: 多个连续 CR 应不影响解析。
     /// </summary>
+    [Fact]
     public void NirsMultipleCR_ShouldHandleCorrectly()
     {
         // Arrange
@@ -1050,6 +1081,7 @@ public class NirsProtocolParserRobustnessTests
     /// <summary>
     /// 测试: 帧被截断到一半应等待更多数据。
     /// </summary>
+    [Fact]
     public void NirsTruncatedFrame_ShouldWaitForMore()
     {
         // Arrange
@@ -1081,6 +1113,7 @@ public class NirsProtocolParserRobustnessTests
     /// <summary>
     /// 测试: rSO2 字段包含非法字符应解析失败。
     /// </summary>
+    [Fact]
     public void NirsRso2_IllegalCharacters_ShouldFail()
     {
         // Arrange
@@ -1106,6 +1139,7 @@ public class NirsProtocolParserRobustnessTests
     /// <summary>
     /// 测试: 超长字段应被截断或拒绝。
     /// </summary>
+    [Fact]
     public void NirsRso2_VeryLongField_ShouldHandle()
     {
         // Arrange
@@ -1131,6 +1165,7 @@ public class NirsProtocolParserRobustnessTests
     /// <summary>
     /// 测试: 缺少逗号分隔符应解析失败。
     /// </summary>
+    [Fact]
     public void NirsRso2_MissingComma_ShouldFail()
     {
         // Arrange
@@ -1158,6 +1193,7 @@ public class NirsProtocolParserRobustnessTests
     /// <summary>
     /// 测试: 负数 rSO2 值应无效。
     /// </summary>
+    [Fact]
     public void NirsRso2_NegativeValue_ShouldBeInvalid()
     {
         // Arrange
@@ -1181,6 +1217,7 @@ public class NirsProtocolParserRobustnessTests
     /// <summary>
     /// 测试: 科学计数法表示的值（如 7.2E+01）应正确解析或标记无效。
     /// </summary>
+    [Fact]
     public void NirsRso2_ScientificNotation_ShouldHandle()
     {
         // Arrange
@@ -1208,6 +1245,7 @@ public class NirsProtocolParserRobustnessTests
     /// <summary>
     /// 测试: 浮点数溢出（超大值）应处理。
     /// </summary>
+    [Fact]
     public void NirsRso2_FloatOverflow_ShouldHandle()
     {
         // Arrange
@@ -1231,6 +1269,7 @@ public class NirsProtocolParserRobustnessTests
     /// <summary>
     /// 测试: 所有通道均为 "---" 应全部无效。
     /// </summary>
+    [Fact]
     public void NirsRso2_AllInvalid_ShouldBeAllZero()
     {
         // Arrange
@@ -1262,6 +1301,7 @@ public class NirsProtocolParserRobustnessTests
     /// <remarks>
     /// 注意: 这只是基础并发测试，实际使用中应确保单线程调用
     /// </remarks>
+    [Fact]
     public void NirsConcurrent_MultipleThreads_ShouldNotCrash()
     {
         // Arrange
@@ -1375,3 +1415,6 @@ public class NirsProtocolParserRobustnessTests
 
     #endregion
 }
+
+
+

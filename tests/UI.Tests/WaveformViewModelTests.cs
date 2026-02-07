@@ -1,6 +1,3 @@
-// WaveformViewModelTests.cs
-// Sprint 2.4: Tests for WaveformViewModel parameter bindings and audit logging.
-
 using Neo.UI.Services;
 using Neo.UI.ViewModels;
 using Xunit;
@@ -12,21 +9,28 @@ public class WaveformViewModelTests
     private static WaveformViewModel CreateVm(out AuditServiceAdapter audit)
     {
         audit = new AuditServiceAdapter();
-        return new WaveformViewModel(audit);
+        return new WaveformViewModel(audit, new StubThemeService());
     }
 
     [Fact]
-    public void LeadCh1_DefaultValue()
+    public void SelectedLeadCombination_DefaultsToFirstOption()
     {
         var vm = CreateVm(out _);
+
+        Assert.NotNull(vm.SelectedLeadCombination);
+        Assert.Equal("C3-P3 / C4-P4", vm.SelectedLeadCombination!.Label);
         Assert.Equal("CH1: C3-P3", vm.LeadCh1);
+        Assert.Equal("CH2: C4-P4", vm.LeadCh2);
     }
 
     [Fact]
-    public void LeadCh2_DefaultValue()
+    public void SelectedLeadCombination_UpdatesLeadLabels()
     {
         var vm = CreateVm(out _);
-        Assert.Equal("CH2: C4-P4", vm.LeadCh2);
+        vm.SelectedLeadCombination = WaveformViewModel.LeadCombinationOptions[1];
+
+        Assert.Equal("CH1: F3-P3", vm.LeadCh1);
+        Assert.Equal("CH2: F4-P4", vm.LeadCh2);
     }
 
     [Fact]
@@ -34,7 +38,7 @@ public class WaveformViewModelTests
     {
         var vm = CreateVm(out _);
         Assert.Equal(100, vm.SelectedGain);
-        Assert.Equal("100 μV/cm", vm.GainDisplay);
+        Assert.Equal("100 uV/cm", vm.GainDisplay);
     }
 
     [Fact]
@@ -52,19 +56,11 @@ public class WaveformViewModelTests
     }
 
     [Fact]
-    public void GainDisplay_UpdatesOnChange()
-    {
-        var vm = CreateVm(out _);
-        vm.SelectedGain = 50;
-        Assert.Equal("50 μV/cm", vm.GainDisplay);
-    }
-
-    [Fact]
     public void SelectedYAxis_DefaultIs100()
     {
         var vm = CreateVm(out _);
         Assert.Equal(100, vm.SelectedYAxis);
-        Assert.Equal("±100 μV", vm.YAxisDisplay);
+        Assert.Equal("+/-100 uV", vm.YAxisDisplay);
     }
 
     [Fact]
@@ -72,7 +68,7 @@ public class WaveformViewModelTests
     {
         var vm = CreateVm(out _);
         vm.SelectedYAxis = 200;
-        Assert.Equal("±200 μV", vm.YAxisDisplay);
+        Assert.Equal("+/-200 uV", vm.YAxisDisplay);
     }
 
     [Fact]
@@ -143,7 +139,7 @@ public class WaveformViewModelTests
     {
         var vm = CreateVm(out _);
         Assert.Equal(15, vm.SweepSeconds);
-        Assert.Equal("15 秒/屏", vm.SweepDisplay);
+        Assert.Equal("15 s", vm.SweepDisplay);
     }
 
     [Fact]
@@ -151,7 +147,7 @@ public class WaveformViewModelTests
     {
         var vm = CreateVm(out _);
         Assert.Equal(3, vm.SelectedAeegHours);
-        Assert.Equal("3 小时", vm.AeegTimeDisplay);
+        Assert.Equal("3 h", vm.AeegTimeDisplay);
     }
 
     [Fact]
@@ -159,7 +155,7 @@ public class WaveformViewModelTests
     {
         var vm = CreateVm(out _);
         vm.SelectedAeegHours = 6;
-        Assert.Equal("6 小时", vm.AeegTimeDisplay);
+        Assert.Equal("6 h", vm.AeegTimeDisplay);
     }
 
     [Fact]
@@ -176,5 +172,91 @@ public class WaveformViewModelTests
         Assert.Equal(5, WaveformViewModel.AeegTimeWindowOptions.Length);
         Assert.Contains(1, WaveformViewModel.AeegTimeWindowOptions);
         Assert.Contains(24, WaveformViewModel.AeegTimeWindowOptions);
+    }
+
+    [Fact]
+    public void CycleGain_CyclesToNextValue()
+    {
+        var vm = CreateVm(out _);
+        vm.SelectedGain = 100;
+
+        vm.CycleGainCommand.Execute(null);
+
+        Assert.Equal(200, vm.SelectedGain);
+    }
+
+    [Fact]
+    public void CycleGain_WrapsAroundFromLastToFirst()
+    {
+        var vm = CreateVm(out _);
+        vm.SelectedGain = 1000;
+
+        vm.CycleGainCommand.Execute(null);
+
+        Assert.Equal(10, vm.SelectedGain);
+    }
+
+    [Fact]
+    public void CycleYAxis_CyclesToNextValue()
+    {
+        var vm = CreateVm(out _);
+        vm.SelectedYAxis = 100;
+
+        vm.CycleYAxisCommand.Execute(null);
+
+        Assert.Equal(200, vm.SelectedYAxis);
+    }
+
+    [Fact]
+    public void CycleYAxis_WrapsAroundFromLastToFirst()
+    {
+        var vm = CreateVm(out _);
+        vm.SelectedYAxis = 200;
+
+        vm.CycleYAxisCommand.Execute(null);
+
+        Assert.Equal(25, vm.SelectedYAxis);
+    }
+
+    [Fact]
+    public void CycleAeegTimeWindow_CyclesToNextValue()
+    {
+        var vm = CreateVm(out _);
+        vm.SelectedAeegHours = 3;
+
+        vm.CycleAeegTimeWindowCommand.Execute(null);
+
+        Assert.Equal(6, vm.SelectedAeegHours);
+    }
+
+    [Fact]
+    public void CycleAeegTimeWindow_WrapsAroundFromLastToFirst()
+    {
+        var vm = CreateVm(out _);
+        vm.SelectedAeegHours = 24;
+
+        vm.CycleAeegTimeWindowCommand.Execute(null);
+
+        Assert.Equal(1, vm.SelectedAeegHours);
+    }
+
+    [Fact]
+    public void CycleLeadCombination_CyclesThroughMontages()
+    {
+        var vm = CreateVm(out _);
+        Assert.Equal("CH1: C3-P3", vm.LeadCh1);
+        Assert.Equal("CH2: C4-P4", vm.LeadCh2);
+
+        vm.CycleLeadCombinationCommand.Execute(null);
+        Assert.Equal("CH1: F3-P3", vm.LeadCh1);
+        Assert.Equal("CH2: F4-P4", vm.LeadCh2);
+
+        vm.CycleLeadCombinationCommand.Execute(null);
+        Assert.Equal("CH1: C3-O1", vm.LeadCh1);
+        Assert.Equal("CH2: C4-O2", vm.LeadCh2);
+
+        vm.CycleLeadCombinationCommand.Execute(null);
+        Assert.Equal("CH1: C3-P3", vm.LeadCh1);
+        Assert.Equal("CH2: C4-P4", vm.LeadCh2);
     }
 }

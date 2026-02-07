@@ -75,7 +75,15 @@ public sealed class D3DImageRenderer : IDisposable
     /// </summary>
     public D3DImageRenderer()
     {
-        InitializeDevices();
+        try
+        {
+            InitializeDevices();
+        }
+        catch (Exception)
+        {
+            // GPU not available (e.g., headless test environment)
+            // IsRenderReady will return false; rendering is disabled
+        }
     }
 
     // ═══════════════════════════════════════════════════════════════════

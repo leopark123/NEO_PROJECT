@@ -65,7 +65,7 @@
 | MainWindowViewModel (RelayCommand×7, 服务注入) | ✅ |
 | HomeViewModel | ✅ |
 | NavigationService + RouteRegistry + INavigable | ✅ |
-| DialogService (Stub, Phase 4 实现) | ✅ |
+| DialogService (基础实现, Phase 4.7 完成) | ✅ |
 | AuditServiceAdapter (内存 sink, 10K bounded) | ✅ |
 | ServiceRegistry (DI 引导) | ✅ |
 | ContentControl 导航绑定 + 审计调用点 | ✅ |
@@ -235,11 +235,11 @@
 | SeekBarRenderer (D2D 渲染) | ✅ | 轨道 + 填充 + 手柄 + 时间标签 (替代 SeekBar.xaml) |
 | PlaybackClock 集成 | ✅ | Neo.Playback 同步时钟 |
 | 播放/暂停切换 | ✅ | Toolbar.IsPlaying → PlaybackClock.Start/Pause 绑定 |
-| 拖动 Seek | ✅ | MouseDown/Up/Move → TrySetSeekFromPoint |
-| 点击跳转 | ✅ | UI_SPEC §6.3 |
+| 拖动 Seek | ⚠️ | 交互延后至 Phase 5（当前禁用） |
+| 点击跳转 | ⚠️ | 交互延后至 Phase 5（当前禁用） |
 | 多流同步 (EEG/aEEG/NIRS/Video, ±100ms) | ✅ | INirsPlaybackSource 接口 + MultiStreamCoordinator 集成 |
 | SeekBar 滑块 ≥20×20px 触控 | ✅ | Dev Plan §7.1 |
-| 审计: SEEK 事件 | ✅ | TrySetSeekFromPoint 记录 AuditEventTypes.Seek |
+| 审计: SEEK 事件 | ⚠️ | 交互启用后补齐 |
 
 ### Sprint 3.6: 质量指示渲染 ✅
 
@@ -255,7 +255,7 @@
 
 ---
 
-## 六、Phase 4 — 对话框系统 ⚪ 未开始
+## 六、Phase 4 — 对话框系统 🟡 部分完成 (1/7)
 
 > **目标**: 实现全部 7 个对话框，完成 DialogService 实际逻辑。
 > **布局规格**: NEO_UI_Development_Plan_WPF.md §6
@@ -339,9 +339,9 @@
 | ShowMessage 方法 | ✅ | MessageBox 封装 |
 | ShowConfirmation 方法 | ✅ | 确认对话框封装 |
 | 对话框 XAML 骨架 | 🟡 | 7个对话框已创建基础结构，但内容未完成 |
+| 单元测试 | ✅ | `tests/UI.Tests/DialogServiceTests.cs` |
 
 **注**: Sprint 4.1-4.6 的对话框 XAML 文件已创建，但只有基础骨架，具体表单内容、验证逻辑等待实现。
-| 单元测试 | [ ] | DialogService 逻辑 |
 
 ---
 
@@ -513,7 +513,7 @@
 | 条件 | 状态 |
 |------|------|
 | EEG/aEEG 波形可渲染显示 | ✅ |
-| SeekBar 时间轴可交互 | ✅ |
+| SeekBar 时间轴可交互 | ⚠️ 延后至 Phase 5 |
 | 质量指示可视化就绪 | ✅ |
 | Neo.Rendering/DSP/Playback 集成 | ✅ |
 | 增益/通道/时间窗 UI↔渲染器绑定 | ✅ |
@@ -526,7 +526,7 @@
 | 条件 | 状态 |
 |------|------|
 | 7 个对话框全部实现 | [ ] |
-| DialogService 完整替换 Stub | [ ] |
+| DialogService 完整替换 Stub | ✅ |
 | Sprint 4.1~4.7 全部完成 | [ ] |
 
 ### Phase 5 → Phase 6

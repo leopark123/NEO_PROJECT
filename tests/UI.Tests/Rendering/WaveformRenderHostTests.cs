@@ -5,6 +5,7 @@
 // GPU rendering is validated through integration tests and manual testing.
 
 using Neo.UI.Rendering;
+using Neo.UI.Services;
 using Xunit;
 
 namespace Neo.UI.Tests.Rendering;
@@ -203,5 +204,186 @@ public sealed class WaveformRenderHostTests
 
         // Assert
         Assert.NotNull(overlayLayer);
+    }
+
+    // ============================================
+    // Phase 3: Gain, Y-Axis, aEEG Hours properties
+    // ============================================
+
+    [Fact]
+    public void GainMicrovoltsPerCm_DefaultIs100()
+    {
+        // Act
+        using var host = new WaveformRenderHost();
+
+        // Assert
+        Assert.Equal(100, host.GainMicrovoltsPerCm);
+    }
+
+    [Fact]
+    public void GainMicrovoltsPerCm_ClampsToMinimum10()
+    {
+        // Arrange
+        using var host = new WaveformRenderHost();
+
+        // Act
+        host.GainMicrovoltsPerCm = 5;
+
+        // Assert
+        Assert.Equal(10, host.GainMicrovoltsPerCm);
+    }
+
+    [Fact]
+    public void GainMicrovoltsPerCm_ClampsToMaximum1000()
+    {
+        // Arrange
+        using var host = new WaveformRenderHost();
+
+        // Act
+        host.GainMicrovoltsPerCm = 2000;
+
+        // Assert
+        Assert.Equal(1000, host.GainMicrovoltsPerCm);
+    }
+
+    [Fact]
+    public void YAxisRangeUv_DefaultIs100()
+    {
+        // Act
+        using var host = new WaveformRenderHost();
+
+        // Assert
+        Assert.Equal(100, host.YAxisRangeUv);
+    }
+
+    [Fact]
+    public void YAxisRangeUv_ClampsToMinimum25()
+    {
+        // Arrange
+        using var host = new WaveformRenderHost();
+
+        // Act
+        host.YAxisRangeUv = 10;
+
+        // Assert
+        Assert.Equal(25, host.YAxisRangeUv);
+    }
+
+    [Fact]
+    public void YAxisRangeUv_ClampsToMaximum200()
+    {
+        // Arrange
+        using var host = new WaveformRenderHost();
+
+        // Act
+        host.YAxisRangeUv = 500;
+
+        // Assert
+        Assert.Equal(200, host.YAxisRangeUv);
+    }
+
+    [Fact]
+    public void AeegVisibleHours_DefaultIs3()
+    {
+        // Act
+        using var host = new WaveformRenderHost();
+
+        // Assert
+        Assert.Equal(3, host.AeegVisibleHours);
+    }
+
+    [Fact]
+    public void AeegVisibleHours_SetterUpdatesValue()
+    {
+        // Arrange
+        using var host = new WaveformRenderHost();
+
+        // Act
+        host.AeegVisibleHours = 6;
+
+        // Assert
+        Assert.Equal(6, host.AeegVisibleHours);
+    }
+
+    [Fact]
+    public void AeegVisibleHours_ClampsToMinimum1()
+    {
+        // Arrange
+        using var host = new WaveformRenderHost();
+
+        // Act
+        host.AeegVisibleHours = 0;
+
+        // Assert
+        Assert.Equal(1, host.AeegVisibleHours);
+    }
+
+    [Fact]
+    public void AeegVisibleHours_ClampsToMaximum24()
+    {
+        // Arrange
+        using var host = new WaveformRenderHost();
+
+        // Act
+        host.AeegVisibleHours = 48;
+
+        // Assert
+        Assert.Equal(24, host.AeegVisibleHours);
+    }
+
+    [Fact]
+    public void PlaybackClock_IsExposed()
+    {
+        // Act
+        using var host = new WaveformRenderHost();
+
+        // Assert
+        Assert.NotNull(host.PlaybackClock);
+    }
+
+    [Fact]
+    public void PlaybackClock_StartsNotRunning()
+    {
+        // Act
+        using var host = new WaveformRenderHost();
+
+        // Assert - clock starts paused per Phase 3 spec
+        Assert.False(host.PlaybackClock.IsRunning);
+    }
+
+    [Fact]
+    public void PlaybackClock_StartAndPause_ChangesState()
+    {
+        using var host = new WaveformRenderHost();
+
+        host.PlaybackClock.Start();
+        Assert.True(host.PlaybackClock.IsRunning);
+
+        host.PlaybackClock.Pause();
+        Assert.False(host.PlaybackClock.IsRunning);
+    }
+
+    [Fact]
+    public void TrySetSeekFromPoint_InsideSeekBar_ReturnsFalseAndDoesNotLogAudit()
+    {
+        var audit = new AuditServiceAdapter();
+        using var host = new WaveformRenderHost(audit);
+
+        bool handled = host.TrySetSeekFromPoint(0.5, 0.95);
+
+        Assert.False(handled);
+        Assert.Empty(audit.GetRecentEvents(10));
+    }
+
+    [Fact]
+    public void TrySetSeekFromPoint_OutsideSeekBar_ReturnsFalseAndDoesNotLogAudit()
+    {
+        var audit = new AuditServiceAdapter();
+        using var host = new WaveformRenderHost(audit);
+
+        bool handled = host.TrySetSeekFromPoint(0.5, 0.1);
+
+        Assert.False(handled);
+        Assert.Empty(audit.GetRecentEvents(10));
     }
 }

@@ -60,7 +60,7 @@ public sealed class SafeDoubleBufferStressTests
         // Arrange
         var buffer = new SafeDoubleBuffer<long>(1000);
         const int totalWrites = 10000;
-        long lastRead = -1;
+        long lastTimestamp = -1;
         int readCount = 0;
         int outOfOrderCount = 0;
 
@@ -83,15 +83,15 @@ public sealed class SafeDoubleBufferStressTests
                 if (buffer.TryGetSnapshot(lastVersion, out var snapshot))
                 {
                     lastVersion = snapshot.Version;
-                    long value = snapshot.Data[0];
+                    long timestamp = snapshot.TimestampUs;
 
-                    // Check for out-of-order (shouldn't happen, but producer might
-                    // be faster than consumer so we might skip values)
-                    if (value < lastRead)
+                    // Validate ordering via snapshot metadata. Data payload is a zero-copy view
+                    // and may be overwritten by future publishes before assertion code observes it.
+                    if (timestamp < lastTimestamp)
                     {
                         Interlocked.Increment(ref outOfOrderCount);
                     }
-                    lastRead = value;
+                    lastTimestamp = timestamp;
                     Interlocked.Increment(ref readCount);
                 }
             }

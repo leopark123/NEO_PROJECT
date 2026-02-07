@@ -33,6 +33,7 @@ public sealed class MultiStreamCoordinator : ITimelineService, IDisposable
     private readonly PlaybackClock _clock;
     private readonly EegPlaybackSource? _eegSource;
     private readonly VideoPlaybackSource? _videoSource;
+    private readonly INirsPlaybackSource? _nirsSource;
     private readonly object _lock = new();
 
     private Thread? _tickThread;
@@ -67,14 +68,17 @@ public sealed class MultiStreamCoordinator : ITimelineService, IDisposable
     /// <param name="clock">Shared playback clock.</param>
     /// <param name="eegSource">EEG playback source (optional).</param>
     /// <param name="videoSource">Video playback source (optional).</param>
+    /// <param name="nirsSource">NIRS playback source (optional).</param>
     public MultiStreamCoordinator(
         PlaybackClock clock,
         EegPlaybackSource? eegSource = null,
-        VideoPlaybackSource? videoSource = null)
+        VideoPlaybackSource? videoSource = null,
+        INirsPlaybackSource? nirsSource = null)
     {
         _clock = clock ?? throw new ArgumentNullException(nameof(clock));
         _eegSource = eegSource;
         _videoSource = videoSource;
+        _nirsSource = nirsSource;
 
         // Subscribe to EEG samples for sync drift monitoring
         if (_eegSource != null)
@@ -103,6 +107,7 @@ public sealed class MultiStreamCoordinator : ITimelineService, IDisposable
             _clock.Start();
             _eegSource?.Start();
             _videoSource?.Start();
+            _nirsSource?.Start();
 
             _state = PlaybackState.Playing;
             StartTickThread();
@@ -125,6 +130,7 @@ public sealed class MultiStreamCoordinator : ITimelineService, IDisposable
 
             _clock.Pause();
             _eegSource?.Stop();
+            _nirsSource?.Stop();
             // Video: keep current frame visible, don't stop
 
             _state = PlaybackState.Paused;
@@ -172,6 +178,9 @@ public sealed class MultiStreamCoordinator : ITimelineService, IDisposable
                 }
             }
 
+            // 4. Seek NIRS playback
+            _nirsSource?.NotifySeek(positionUs);
+
             Trace.TraceInformation("[MultiStreamCoordinator] Seeked to {0} us", positionUs);
         }
         catch (Exception ex)
@@ -202,6 +211,7 @@ public sealed class MultiStreamCoordinator : ITimelineService, IDisposable
             _clock.Pause();
             _eegSource?.Stop();
             _videoSource?.Stop();
+            _nirsSource?.Stop();
 
             _state = PlaybackState.Paused;
 
@@ -319,6 +329,7 @@ public sealed class MultiStreamCoordinator : ITimelineService, IDisposable
         }
 
         _eegSource?.Dispose();
+        _nirsSource?.Dispose();
         // VideoPlaybackSource lifecycle managed externally
 
         _disposed = true;

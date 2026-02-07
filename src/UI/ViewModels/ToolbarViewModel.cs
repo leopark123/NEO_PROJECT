@@ -1,13 +1,3 @@
-// ToolbarViewModel.cs
-// Sprint 2.1: ToolbarPanel ViewModel with clock, playback, screenshot, annotation commands.
-//
-// References:
-// - UI_SPEC.md §4.1: Toolbar row (logo, seekbar, buttons, time, user, bed)
-// - UI_SPEC.md §8: Status bar time display (1-second refresh)
-// - UI_SPEC.md §10: Audit requirements
-// - UI_SPEC.md §2.2: Monotonic Clock — UI does not introduce a new time base.
-//   Wall-clock display is derived from Stopwatch (monotonic) + initial UTC anchor.
-
 using System.Diagnostics;
 using System.Windows.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
@@ -16,17 +6,11 @@ using Neo.UI.Services;
 
 namespace Neo.UI.ViewModels;
 
-/// <summary>
-/// ViewModel for the top toolbar panel.
-/// Manages clock refresh, playback state, and toolbar button commands with audit logging.
-/// </summary>
 public partial class ToolbarViewModel : ViewModelBase
 {
     private readonly IAuditService _audit;
+    private readonly IThemeService _themeService;
     private readonly DispatcherTimer? _clockTimer;
-
-    // Monotonic clock anchor — UI_SPEC §2.2: no private DateTime time base.
-    // Wall-clock display is derived from Stopwatch elapsed + initial UTC snapshot.
     private readonly long _startTicks = Stopwatch.GetTimestamp();
     private readonly DateTimeOffset _startUtc = DateTimeOffset.UtcNow;
 
@@ -34,19 +18,36 @@ public partial class ToolbarViewModel : ViewModelBase
     private string _currentTime = "--:--:--";
 
     [ObservableProperty]
-    private string _currentUser = "用户: --";
+    private string _currentUser = "User: --";
 
     [ObservableProperty]
-    private string _bedNumber = "床位: --";
+    private string _bedNumber = "--";
 
     [ObservableProperty]
     private bool _isPlaying;
 
-    public ToolbarViewModel(IAuditService audit)
+    [ObservableProperty]
+    private bool _isPinned;
+
+    [ObservableProperty]
+    private bool _isNavDrawerOpen;
+
+    [ObservableProperty]
+    private string _appVersion = GetVersionText();
+
+    [ObservableProperty]
+    private string _currentThemeName = "Apple";
+
+    public string BedNumberDisplay => $"Bed: {BedNumber}";
+
+    public ToolbarViewModel(IAuditService audit, IThemeService themeService)
     {
         _audit = audit;
+        _themeService = themeService;
+        CurrentUser = "User: Operator";
+        BedNumber = "01";
+        CurrentThemeName = _themeService.CurrentTheme.ToString();
 
-        // Start 1-second clock timer — UI_SPEC §8
         _clockTimer = new DispatcherTimer
         {
             Interval = TimeSpan.FromSeconds(1)
@@ -54,16 +55,28 @@ public partial class ToolbarViewModel : ViewModelBase
         _clockTimer.Tick += (_, _) => RefreshClock();
         _clockTimer.Start();
 
-        // Set initial time immediately
         RefreshClock();
     }
 
-    /// <summary>
-    /// Stops the clock timer. Call on cleanup/shutdown.
-    /// </summary>
     public void StopClock()
     {
         _clockTimer?.Stop();
+    }
+
+    partial void OnBedNumberChanged(string value)
+    {
+        OnPropertyChanged(nameof(BedNumberDisplay));
+    }
+
+    [RelayCommand]
+    private void ToggleNavDrawer()
+    {
+        IsNavDrawerOpen = !IsNavDrawerOpen;
+    }
+
+    [RelayCommand]
+    private void OpenVersionEntry()
+    {
     }
 
     [RelayCommand]
@@ -81,6 +94,12 @@ public partial class ToolbarViewModel : ViewModelBase
     }
 
     [RelayCommand]
+    private void Pin()
+    {
+        IsPinned = !IsPinned;
+    }
+
+    [RelayCommand]
     private void Screenshot()
     {
         _audit.Log(AuditEventTypes.Screenshot, "Screenshot requested");
@@ -92,10 +111,36 @@ public partial class ToolbarViewModel : ViewModelBase
         _audit.Log(AuditEventTypes.Annotation, "Annotation requested");
     }
 
-    /// <summary>
-    /// Derives wall-clock display from monotonic Stopwatch elapsed + UTC anchor.
-    /// Complies with UI_SPEC §2.2: no DateTime.Now as independent time source.
-    /// </summary>
+    [RelayCommand]
+    private void SwitchTheme()
+    {
+        System.Diagnostics.Debug.WriteLine($"[SwitchTheme] Current theme: {_themeService.CurrentTheme}");
+
+        var newTheme = _themeService.CurrentTheme == ThemeType.Apple
+            ? ThemeType.Medical
+            : ThemeType.Apple;
+
+        System.Diagnostics.Debug.WriteLine($"[SwitchTheme] Switching to: {newTheme}");
+
+        _themeService.SwitchTheme(newTheme);
+        CurrentThemeName = newTheme.ToString();
+
+        System.Diagnostics.Debug.WriteLine($"[SwitchTheme] Theme switched, new name: {CurrentThemeName}");
+
+        _audit.Log(AuditEventTypes.ConfigChange, $"Theme switched to {newTheme}");
+    }
+
+    private static string GetVersionText()
+    {
+        var version = typeof(ToolbarViewModel).Assembly.GetName().Version;
+        if (version is null)
+        {
+            return "v0.0.0";
+        }
+
+        return $"v{version.Major}.{version.Minor}.{Math.Max(0, version.Build)}";
+    }
+
     private void RefreshClock()
     {
         var elapsedTicks = Stopwatch.GetTimestamp() - _startTicks;

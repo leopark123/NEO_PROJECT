@@ -352,8 +352,8 @@ public bool TrySetSeekFromPoint(double x, double y)
 ✅ ADR落实: 合规 (8/8)
 ✅ 性能基准: 达标 (全部指标符合)
 
-⚠️ UI系统: 部分完成 (Phase 1-3完成, Phase 4-7待实现)
-⚠️ 文档一致性: 需要更新 (RC文档过时)
+⚠️ UI系统: 部分完成 (Phase 1-3 完成, Phase 4 已 1/7, Phase 5-7 待实现)
+✅ 文档一致性: 已校准 (RC文档为历史快照，当前锚点为 PROJECT_STATE/PROJECT_STATEUI)
 
 综合判定: ✅ 后端系统 100% 合规
           ⏳ UI系统按计划推进 (47%)
@@ -387,39 +387,28 @@ public bool TrySetSeekFromPoint(double x, double y)
 
 ---
 
-## 📝 十一、下一步建议
+## 📝 十一、下一步建议（当前）
 
-### 优先级 1: 更新规格文档与代码 (1小时)
-
-```
-1. SeekBar 交互规格更新
-   - spec/UI_SPEC.md: 标记 SeekBar 交互延后至 Phase X
-
-2. NIRS 模拟数据规格与代码
-   - spec/UI_SPEC.md: 添加模拟数据机制说明（真实/模拟双模式）
-   - src/UI/Services/NirsPanelController.cs: 修正模拟通道范围（CH1-CH4 而非 CH1-CH3）
-
-3. 删除重复证据文件
-   - 替换所有引用: evidence/sources/icd/ICD_NIRS_RS232_Protocol_Fields.md → evidence/sources/icd/ICD_NIRS_RS232_Protocol_Fields.md
-   - 删除重复文件: rm evidence/sources/icd/ICD_NIRS_RS232_Protocol_Fields.md
-```
-
-### 优先级 2: 完善对话框系统 (6-8小时)
+### 优先级 1: 完成 Phase 4 对话框内容 (6-8小时)
 
 ```
-Phase 4: 对话框系统 (1/7已完成) - 继续实现 ViewModel 和逻辑
-  - Sprint 4.2-4.7: 对话框 ViewModel、验证逻辑、集成测试
+Phase 4 当前: 1/7（DialogService + 对话框骨架已完成）
+待办: Sprint 4.1~4.6 表单字段、校验逻辑、交互测试
 ```
 
-### 优先级 3: 继续 UI Phase 5-7 (按需)
+### 优先级 2: 进入 Phase 5 并恢复 SeekBar 交互 (5-6小时)
 
 ```
-Phase 4: 对话框系统 (1/7) - 剩余 6-8小时
-Phase 5: 高级功能 (0/5) - 5-6小时
-Phase 6: NIRS+视频UI (1/3) - 4-5小时
-Phase 7: 测试优化 (0/4) - 3-4小时
+实现 TrySetSeekFromPoint 交互链路
+补齐 SEEK 审计事件
+完成回放联动验收（响应时间与同步精度）
+```
 
-预估总工作量: 20-25小时
+### 优先级 3: 推进 Phase 6~7 (7-9小时)
+
+```
+Phase 6: NIRS/Video UI 深化
+Phase 7: 测试优化与72h稳定性验证
 ```
 
 ---
@@ -434,8 +423,8 @@ Phase 7: 测试优化 (0/4) - 3-4小时
 
 ### RC 验收文档
 
-- ⚠️ `docs/release/RC_CHECKLIST.md` - 需更新S3-00状态
-- ⚠️ `docs/release/RC_KNOWN_LIMITATIONS.md` - 需更新S3-00状态
+- ✅ `docs/release/RC_CHECKLIST.md` - 历史快照（非当前锚点）
+- ✅ `docs/release/RC_KNOWN_LIMITATIONS.md` - 历史快照（非当前锚点）
 - ✅ `docs/release/RC_TEST_REPORT.md` - 有效
 
 ### 实现交付文档
@@ -453,6 +442,6 @@ Phase 7: 测试优化 (0/4) - 3-4小时
 ## 🔖 快速参考
 
 **后端系统**: ✅ 100% 完成, 598/598 测试通过
-**UI 系统**: ⏳ 47% 完成, Phase 1-3 完成
+**UI 系统**: ⏳ 47% 完成, Phase 1-3 完成, Phase 4 当前 1/7
 **合规性**: ✅ 铁律10/10, ADR 8/8, 验收4/4
-**下一步**: 更新RC文档 → 继续UI开发
+**下一步**: 继续 Phase 4~7 UI 开发（优先完成对话框内容与 SeekBar 交互）

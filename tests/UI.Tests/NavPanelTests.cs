@@ -22,10 +22,13 @@ public class NavPanelTests
         var nav = new NavigationService(routes);
         audit = new AuditServiceAdapter();
         var dialog = new StubDialogService();
-        var toolbar = new ToolbarViewModel(audit);
+        var theme = new StubThemeService();
+        var toolbar = new ToolbarViewModel(audit, theme);
         var status = new StatusViewModel();
-        var waveform = new WaveformViewModel(audit);
-        var vm = new MainWindowViewModel(nav, audit, dialog, toolbar, status, waveform);
+        var waveform = new WaveformViewModel(audit, theme);
+        var video = new VideoViewModel();
+        var nirs = new NirsViewModel();
+        var vm = new MainWindowViewModel(nav, audit, dialog, toolbar, status, waveform, video, nirs);
         toolbar.StopClock();
         status.StopTimer();
         return vm;

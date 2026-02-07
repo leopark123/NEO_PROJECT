@@ -1,0 +1,81 @@
+<Window x:Class="Neo.UI.Views.Dialogs.FilterDialog"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Filter"
+        Width="{StaticResource Dim.DialogSmallWidth}"
+        Height="{StaticResource Dim.DialogSmallHeight}"
+        Background="{StaticResource BackgroundBrush}"
+        WindowStartupLocation="CenterOwner"
+        ResizeMode="NoResize">
+
+    <Grid Margin="{StaticResource Dim.PanelPaddingThickness}">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <TextBlock Grid.Row="0"
+                   Text="Filter Settings"
+                   Style="{StaticResource TitleTextBlockStyle}"/>
+
+        <TextBlock Grid.Row="1"
+                   Text="High-pass"
+                   Style="{StaticResource BodyTextBlockStyle}"
+                   Margin="{StaticResource Dim.ParamSectionMargin}"/>
+        <ComboBox x:Name="HpfCombo"
+                  Grid.Row="2"
+                  Style="{StaticResource NeoComboBoxStyle}"
+                  ItemContainerStyle="{StaticResource NeoComboBoxItemStyle}">
+            <ComboBoxItem Content="0.3" IsSelected="True"/>
+            <ComboBoxItem Content="0.5"/>
+            <ComboBoxItem Content="1.5"/>
+        </ComboBox>
+
+        <TextBlock Grid.Row="3"
+                   Text="Low-pass"
+                   Style="{StaticResource BodyTextBlockStyle}"
+                   Margin="{StaticResource Dim.ParamSectionMargin}"/>
+        <ComboBox x:Name="LpfCombo"
+                  Grid.Row="4"
+                  Style="{StaticResource NeoComboBoxStyle}"
+                  ItemContainerStyle="{StaticResource NeoComboBoxItemStyle}">
+            <ComboBoxItem Content="15"/>
+            <ComboBoxItem Content="35" IsSelected="True"/>
+            <ComboBoxItem Content="50"/>
+            <ComboBoxItem Content="70"/>
+        </ComboBox>
+
+        <TextBlock Grid.Row="5"
+                   Text="Notch"
+                   Style="{StaticResource BodyTextBlockStyle}"
+                   Margin="{StaticResource Dim.ParamSectionMargin}"/>
+        <ComboBox x:Name="NotchCombo"
+                  Grid.Row="6"
+                  Style="{StaticResource NeoComboBoxStyle}"
+                  ItemContainerStyle="{StaticResource NeoComboBoxItemStyle}"
+                  VerticalAlignment="Top">
+            <ComboBoxItem Content="50" IsSelected="True"/>
+            <ComboBoxItem Content="60"/>
+        </ComboBox>
+
+        <StackPanel Grid.Row="7"
+                    Orientation="Horizontal"
+                    HorizontalAlignment="Right"
+                    Margin="{StaticResource Dim.ParamSectionMargin}">
+            <Button Content="Cancel"
+                    Style="{StaticResource SecondaryButtonStyle}"
+                    Margin="{StaticResource Dim.ButtonSpacingMargin}"
+                    Click="OnCancelClick"/>
+            <Button Content="Apply"
+                    Style="{StaticResource PrimaryButtonStyle}"
+                    Margin="{StaticResource Dim.ButtonSpacingMargin}"
+                    Click="OnOkClick"/>
+        </StackPanel>
+    </Grid>
+</Window>

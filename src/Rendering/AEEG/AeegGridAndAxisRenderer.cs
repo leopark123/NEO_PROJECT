@@ -121,11 +121,20 @@ public sealed class AeegGridAndAxisRenderer
             if (showLabels && (tick.IsMajor || tick.VoltageUv == 25))
             {
                 string label = tick.Label;
+                // 标签垂直居中对齐刻度线，但确保不超出renderArea顶部和底部
+                float labelTop = y - 7;
+                const float labelHeight = 14;
+
+                // Clamp to prevent overflow at top
+                labelTop = Math.Max((float)renderArea.Top, labelTop);
+                // Clamp to prevent overflow at bottom
+                labelTop = Math.Min((float)(renderArea.Bottom - labelHeight), labelTop);
+
                 var labelRect = new Rect(
-                    renderArea.Left - 40 - labelMargin,
-                    y - 8,
-                    40,
-                    16);
+                    renderArea.Left + labelMargin,
+                    labelTop,
+                    renderArea.Width - labelMargin * 2,
+                    labelHeight);
 
                 context.DrawText(
                     label,

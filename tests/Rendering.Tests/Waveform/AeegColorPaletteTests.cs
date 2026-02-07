@@ -18,8 +18,37 @@ public sealed class AeegColorPaletteTests
     [Fact]
     public void TrendFill_IsSemiTransparent()
     {
-        Assert.True(AeegColorPalette.TrendFill.A < 1.0f);
-        Assert.True(AeegColorPalette.TrendFill.A > 0.0f);
+        var previous = AeegColorPalette.CurrentTheme;
+        try
+        {
+            AeegColorPalette.SetTheme(AeegThemeType.Medical);
+            Assert.True(AeegColorPalette.TrendFill.A < 1.0f);
+            Assert.True(AeegColorPalette.TrendFill.A > 0.0f);
+        }
+        finally
+        {
+            AeegColorPalette.SetTheme(previous);
+        }
+    }
+
+    [Fact]
+    public void TrendFill_IsGreen()
+    {
+        var previous = AeegColorPalette.CurrentTheme;
+        try
+        {
+            AeegColorPalette.SetTheme(AeegThemeType.Medical);
+            Assert.True(AeegColorPalette.TrendFill.G > AeegColorPalette.TrendFill.R);
+            Assert.True(AeegColorPalette.TrendFill.G > AeegColorPalette.TrendFill.B);
+            Assert.Equal(0f, AeegColorPalette.TrendFill.R, 0.01f);
+            Assert.Equal(0.7f, AeegColorPalette.TrendFill.G, 0.01f);
+            Assert.Equal(0.4f, AeegColorPalette.TrendFill.B, 0.01f);
+            Assert.Equal(0.7f, AeegColorPalette.TrendFill.A, 0.01f);
+        }
+        finally
+        {
+            AeegColorPalette.SetTheme(previous);
+        }
     }
 
     [Fact]

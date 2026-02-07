@@ -1,26 +1,9 @@
-// MainWindowViewModel.cs
-// Sprint 1.2-fix / Sprint 2.2 / Sprint 2.3-2.4: Shell ViewModel with navigation + audit wiring.
-//
-// References:
-// - UI_SPEC.md §3: Architecture = MVVM
-// - UI_SPEC.md §4: Main interface layout
-// - UI_SPEC.md §10: Audit requirements (only spec-listed event types used)
-//
-// Sprint 2.2: Navigation audit — UI_SPEC §10 lists exactly 10 event types;
-// NAVIGATION is not among them. §2.5 "所有用户操作可审计" is a general principle
-// but §10's specific enumeration takes precedence. Page navigation does not
-// affect patient data/monitoring/clinical outcome → not a "关键操作" → no audit.
-
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Neo.UI.Services;
 
 namespace Neo.UI.ViewModels;
 
-/// <summary>
-/// MainWindow shell ViewModel.
-/// Owns the current page (ContentControl binding target) and navigation commands.
-/// </summary>
 public partial class MainWindowViewModel : ViewModelBase
 {
     private readonly INavigationService _navigation;
@@ -33,14 +16,17 @@ public partial class MainWindowViewModel : ViewModelBase
     [ObservableProperty]
     private string _activeRoute = "Home";
 
-    /// <summary>Toolbar ViewModel exposed for DataContext binding.</summary>
     public ToolbarViewModel Toolbar { get; }
 
-    /// <summary>Status bar ViewModel exposed for DataContext binding.</summary>
     public StatusViewModel Status { get; }
 
-    /// <summary>Channel control panel ViewModel exposed for DataContext binding.</summary>
     public WaveformViewModel Waveform { get; }
+
+    public VideoViewModel Video { get; }
+
+    public NirsViewModel Nirs { get; }
+
+    public IAuditService Audit => _audit;
 
     public MainWindowViewModel(
         INavigationService navigation,
@@ -48,7 +34,9 @@ public partial class MainWindowViewModel : ViewModelBase
         IDialogService dialog,
         ToolbarViewModel toolbar,
         StatusViewModel status,
-        WaveformViewModel waveform)
+        WaveformViewModel waveform,
+        VideoViewModel video,
+        NirsViewModel nirs)
     {
         _navigation = navigation;
         _audit = audit;
@@ -56,24 +44,25 @@ public partial class MainWindowViewModel : ViewModelBase
         Toolbar = toolbar;
         Status = status;
         Waveform = waveform;
+        Video = video;
+        Nirs = nirs;
 
-        // Listen for navigation changes and update CurrentPage
-        _navigation.CurrentViewModelChanged += (_, vm) =>
-        {
-            CurrentPage = vm;
-        };
-
-        // Navigate to Home by default
+        _navigation.CurrentViewModelChanged += (_, vm) => CurrentPage = vm;
         _navigation.NavigateTo("Home");
     }
 
     [RelayCommand]
     private void Navigate(string routeKey)
     {
+        if (string.Equals(routeKey, "History", StringComparison.OrdinalIgnoreCase))
+        {
+            ShowHistoryDialog();
+            return;
+        }
+
         if (_navigation.NavigateTo(routeKey))
         {
             ActiveRoute = routeKey;
-            // No audit: §10 has no NAVIGATION type; navigation is not a 关键操作.
         }
     }
 
@@ -83,7 +72,9 @@ public partial class MainWindowViewModel : ViewModelBase
         ActiveRoute = "Filter";
         var result = _dialog.ShowDialog("Filter");
         if (result.Confirmed)
+        {
             _audit.Log(AuditEventTypes.FilterChange, "Filter dialog confirmed");
+        }
     }
 
     [RelayCommand]
@@ -92,7 +83,9 @@ public partial class MainWindowViewModel : ViewModelBase
         ActiveRoute = "Display";
         var result = _dialog.ShowDialog("Display");
         if (result.Confirmed)
+        {
             _audit.Log(AuditEventTypes.GainChange, "Display dialog confirmed");
+        }
     }
 
     [RelayCommand]
@@ -101,14 +94,23 @@ public partial class MainWindowViewModel : ViewModelBase
         ActiveRoute = "User";
         var result = _dialog.ShowDialog("UserManagement");
         if (result.Confirmed)
+        {
             _audit.Log(AuditEventTypes.UserLogin, "User management dialog confirmed");
+        }
+    }
+
+    [RelayCommand]
+    private void ShowHistoryDialog()
+    {
+        ActiveRoute = "History";
+        _dialog.ShowDialog("History");
     }
 
     [RelayCommand]
     private void RequestShutdown()
     {
         ActiveRoute = "Shutdown";
-        if (_dialog.ShowConfirmation("关机确认", "确定要关闭系统吗？"))
+        if (_dialog.ShowConfirmation("Shutdown Confirmation", "Do you want to close the monitoring system?"))
         {
             _audit.Log(AuditEventTypes.MonitoringStop, "System shutdown requested");
             System.Windows.Application.Current?.Shutdown();

@@ -45,4 +45,5 @@ public static class AuditEventTypes
     public const string UserLogin = "USER_LOGIN";
     public const string UserLogout = "USER_LOGOUT";
     public const string DeviceDisconnect = "DEVICE_DISCONNECT";
+    public const string ConfigChange = "CONFIG_CHANGE";
 }

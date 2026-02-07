@@ -75,6 +75,7 @@ public sealed class AeegTrendRenderer
     /// <param name="context">D2D 设备上下文。</param>
     /// <param name="resources">资源缓存。</param>
     /// <param name="renderData">预构建的渲染数据。</param>
+    /// <param name="useLineMode">是否使用线条模式（否则使用填充带）。</param>
     /// <remarks>
     /// 铁律6: 只做 Draw 调用，无 O(N) 计算。
     /// 所有数据已由 AeegSeriesBuilder 在预处理阶段构建。
@@ -82,13 +83,13 @@ public sealed class AeegTrendRenderer
     public void Render(
         ID2D1DeviceContext context,
         ResourceCache resources,
-        in AeegTrendRenderData renderData)
+        in AeegTrendRenderData renderData,
+        bool useLineMode = true)
     {
         if (!renderData.HasData)
             return;
 
         // 获取画刷（ResourceCache 已缓存，O(1) 操作）
-        var trendBrush = resources.GetSolidBrush(AeegColorPalette.TrendFill);
         var upperBoundBrush = resources.GetSolidBrush(AeegColorPalette.UpperBound);
         var lowerBoundBrush = resources.GetSolidBrush(AeegColorPalette.LowerBound);
         var gapBrush = resources.GetSolidBrush(AeegColorPalette.GapMask);
@@ -104,56 +105,89 @@ public sealed class AeegTrendRenderer
             DrawGapMask(context, gapBrush, gaps[i], renderArea);
         }
 
-        // 绘制趋势线段（每个段是连续的，无间隙）
-        for (int s = 0; s < segments.Length; s++)
+        if (useLineMode)
         {
-            var segment = segments[s];
-            int endIndex = segment.StartIndex + segment.PointCount;
-
-            // 绘制段内的线条
-            for (int i = segment.StartIndex + 1; i < endIndex; i++)
+            // 线条模式：只绘制上下边界线，不填充
+            for (int s = 0; s < segments.Length; s++)
             {
-                var prev = points[i - 1];
-                var curr = points[i];
+                var segment = segments[s];
+                int endIndex = segment.StartIndex + segment.PointCount;
 
-                // 绘制带状区域
-                DrawTrendBand(context, trendBrush, prev, curr);
+                for (int i = segment.StartIndex + 1; i < endIndex; i++)
+                {
+                    var prev = points[i - 1];
+                    var curr = points[i];
 
-                // 绘制上边界线
-                context.DrawLine(
-                    new Vector2(prev.X, prev.MaxY),
-                    new Vector2(curr.X, curr.MaxY),
-                    upperBoundBrush,
-                    1.5f);
+                    // 绘制上边界线（较粗）
+                    context.DrawLine(
+                        new Vector2(prev.X, prev.MaxY),
+                        new Vector2(curr.X, curr.MaxY),
+                        upperBoundBrush,
+                        2.0f);
 
-                // 绘制下边界线
-                context.DrawLine(
-                    new Vector2(prev.X, prev.MinY),
-                    new Vector2(curr.X, curr.MinY),
-                    lowerBoundBrush,
-                    1.5f);
+                    // 绘制下边界线（较粗）
+                    context.DrawLine(
+                        new Vector2(prev.X, prev.MinY),
+                        new Vector2(curr.X, curr.MinY),
+                        lowerBoundBrush,
+                        2.0f);
+                }
+            }
+        }
+        else
+        {
+            // 填充带模式：使用路径几何绘制实心带状区域（医疗设备标准显示）
+            var trendBrush = resources.GetSolidBrush(AeegColorPalette.TrendFill);
+
+            for (int s = 0; s < segments.Length; s++)
+            {
+                var segment = segments[s];
+                int endIndex = segment.StartIndex + segment.PointCount;
+
+                if (segment.PointCount < 2)
+                    continue;
+
+                // 使用路径几何创建封闭的填充区域
+                DrawTrendBandGeometry(context, resources, trendBrush, points, segment.StartIndex, endIndex);
             }
         }
     }
 
     /// <summary>
-    /// 绘制趋势带状区域。
+    /// 使用路径几何绘制实心带状区域（医疗设备标准显示）。
     /// </summary>
-    private static void DrawTrendBand(
+    private static void DrawTrendBandGeometry(
         ID2D1DeviceContext context,
+        ResourceCache resources,
         ID2D1SolidColorBrush brush,
-        in AeegTrendPoint prev,
-        in AeegTrendPoint curr)
+        ReadOnlySpan<AeegTrendPoint> points,
+        int startIndex,
+        int endIndex)
     {
-        // 绘制填充矩形（近似带状区域）
-        var rect = new Rect(
-            Math.Min(prev.X, curr.X),
-            Math.Min(Math.Min(prev.MinY, curr.MinY), Math.Min(prev.MaxY, curr.MaxY)),
-            Math.Abs(curr.X - prev.X),
-            Math.Max(Math.Max(prev.MinY, curr.MinY), Math.Max(prev.MaxY, curr.MaxY)) -
-            Math.Min(Math.Min(prev.MinY, curr.MinY), Math.Min(prev.MaxY, curr.MaxY)));
+        // 获取D2D工厂
+        using var factory = context.Factory;
+        using var pathGeometry = factory.CreatePathGeometry();
+        using var sink = pathGeometry.Open();
 
-        context.FillRectangle(rect, brush);
+        // 先沿着MaxY边界从左到右
+        sink.BeginFigure(new Vector2(points[startIndex].X, points[startIndex].MaxY), FigureBegin.Filled);
+
+        for (int i = startIndex + 1; i < endIndex; i++)
+        {
+            sink.AddLine(new Vector2(points[i].X, points[i].MaxY));
+        }
+
+        // 然后沿着MinY边界从右到左返回
+        for (int i = endIndex - 1; i >= startIndex; i--)
+        {
+            sink.AddLine(new Vector2(points[i].X, points[i].MinY));
+        }
+
+        sink.EndFigure(FigureEnd.Closed);
+        sink.Close();
+
+        // 填充封闭区域
+        context.FillGeometry(pathGeometry, brush);
     }
 
     /// <summary>

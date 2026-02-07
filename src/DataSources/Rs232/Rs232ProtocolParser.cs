@@ -291,6 +291,7 @@ public sealed class NirsProtocolParser
     private const int MaxFrameLength = 512; // 最大帧长（含冗余）
     private const byte CR = 0x0D;
     private const byte LF = 0x0A;
+    private readonly object _sync = new();
 
     // 解析状态
     private readonly List<byte> _lineBuffer = new();
@@ -332,32 +333,41 @@ public sealed class NirsProtocolParser
     /// <param name="timestampUs">主机接收时间戳（微秒）</param>
     public void ProcessBytes(byte[] buffer, int length, long timestampUs)
     {
-        for (int i = 0; i < length; i++)
+        lock (_sync)
         {
-            byte b = buffer[i];
-
-            // 检测行终止符 CR LF
-            if (b == LF && _lineBuffer.Count > 0 && _lineBuffer[^1] == CR)
+            for (int i = 0; i < length; i++)
             {
-                // 移除 CR
-                _lineBuffer.RemoveAt(_lineBuffer.Count - 1);
+                byte b = buffer[i];
 
-                // 处理完整行
-                if (_lineBuffer.Count > 0)
+                // 检测行终止符 CR LF
+                if (b == LF && _lineBuffer.Count > 0 && _lineBuffer[^1] == CR)
                 {
-                    ProcessLine(_lineBuffer.ToArray(), timestampUs);
-                }
+                    // 移除 CR
+                    _lineBuffer.RemoveAt(_lineBuffer.Count - 1);
 
-                _lineBuffer.Clear();
-            }
-            else
-            {
-                _lineBuffer.Add(b);
+                    // 处理完整行
+                    if (_lineBuffer.Count > 0)
+                    {
+                        ProcessLine(_lineBuffer.ToArray(), timestampUs);
+                    }
 
-                // 防止缓冲区溢出
-                if (_lineBuffer.Count > MaxFrameLength)
-                {
                     _lineBuffer.Clear();
+                }
+                else
+                {
+                    // Ignore leading CR/LF noise between frames.
+                    if (_lineBuffer.Count == 0 && (b == CR || b == LF))
+                    {
+                        continue;
+                    }
+
+                    _lineBuffer.Add(b);
+
+                    // 防止缓冲区溢出
+                    if (_lineBuffer.Count > MaxFrameLength)
+                    {
+                        _lineBuffer.Clear();
+                    }
                 }
             }
         }
@@ -390,7 +400,7 @@ public sealed class NirsProtocolParser
             ushort calculatedCrc = CalculateCrc16Ccitt(System.Text.Encoding.ASCII.GetBytes(dataForCrc));
 
             // 提取接收到的 CRC（4位十六进制）
-            if (cksumIndex + 11 > line.Length) // "CKSUM=" + 4 hex digits
+            if (cksumIndex + 10 > line.Length) // "CKSUM=" + 4 hex digits
             {
                 _parseErrors++;
                 return;

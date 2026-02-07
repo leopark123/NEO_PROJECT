@@ -7,13 +7,13 @@
     <!-- Touch: UI_SPEC.md §13 — MinHeight 44px                           -->
     <!-- ================================================================ -->
 
-    <!-- ── PrimaryButtonStyle ── -->
+    <!-- ── PrimaryButtonStyle (Apple-style) ── -->
     <Style x:Key="PrimaryButtonStyle" TargetType="Button">
         <Setter Property="Background"    Value="{StaticResource PrimaryBrush}"/>
         <Setter Property="Foreground"    Value="{StaticResource TextOnPrimaryBrush}"/>
         <Setter Property="FontFamily"    Value="{StaticResource Font.UI}"/>
         <Setter Property="FontSize"      Value="{StaticResource FontSize.Body}"/>
-        <Setter Property="FontWeight"    Value="Medium"/>
+        <Setter Property="FontWeight"    Value="Semibold"/>
         <Setter Property="Padding"       Value="{StaticResource Dim.ButtonPadding}"/>
         <Setter Property="MinWidth"      Value="{StaticResource Dim.ButtonMinWidth}"/>
         <Setter Property="MinHeight"     Value="{StaticResource Dim.TouchMinSize}"/>
@@ -49,13 +49,13 @@
         </Setter>
     </Style>
 
-    <!-- ── SecondaryButtonStyle ── -->
+    <!-- ── SecondaryButtonStyle (Apple-style) ── -->
     <Style x:Key="SecondaryButtonStyle" TargetType="Button">
         <Setter Property="Background"    Value="{StaticResource TransparentBrush}"/>
         <Setter Property="Foreground"    Value="{StaticResource PrimaryBrush}"/>
         <Setter Property="FontFamily"    Value="{StaticResource Font.UI}"/>
         <Setter Property="FontSize"      Value="{StaticResource FontSize.Body}"/>
-        <Setter Property="FontWeight"    Value="Medium"/>
+        <Setter Property="FontWeight"    Value="Semibold"/>
         <Setter Property="Padding"       Value="{StaticResource Dim.ButtonPadding}"/>
         <Setter Property="MinWidth"      Value="{StaticResource Dim.ButtonMinWidth}"/>
         <Setter Property="MinHeight"     Value="{StaticResource Dim.TouchMinSize}"/>
@@ -67,7 +67,7 @@
                     <Border x:Name="border"
                             Background="{TemplateBinding Background}"
                             BorderBrush="{StaticResource PrimaryBrush}"
-                            BorderThickness="1"
+                            BorderThickness="1.5"
                             CornerRadius="{StaticResource Dim.CornerRadiusAll}"
                             Padding="{TemplateBinding Padding}"
                             SnapsToDevicePixels="True">

@@ -12,6 +12,12 @@
     <sys:Double x:Key="Dim.NavigationWidth">60</sys:Double>
     <sys:Double x:Key="Dim.StatusBarHeight">30</sys:Double>
     <sys:Double x:Key="Dim.RightPanelWidth">300</sys:Double>
+    <sys:Double x:Key="Dim.DialogSmallWidth">400</sys:Double>
+    <sys:Double x:Key="Dim.DialogSmallHeight">260</sys:Double>
+    <sys:Double x:Key="Dim.DialogMediumWidth">640</sys:Double>
+    <sys:Double x:Key="Dim.DialogMediumHeight">420</sys:Double>
+    <sys:Double x:Key="Dim.DialogLargeWidth">900</sys:Double>
+    <sys:Double x:Key="Dim.DialogLargeHeight">620</sys:Double>
 
     <!-- ── Touch minimum (UI_SPEC §13) ── -->
     <sys:Double x:Key="Dim.TouchMinSize">44</sys:Double>
@@ -19,14 +25,14 @@
     <!-- ── Right param panel minimum (UI_SPEC §4.2) ── -->
     <sys:Double x:Key="Dim.ParamPanelMinWidth">150</sys:Double>
 
-    <!-- ── Spacing (Dev Plan §7.2) ── -->
-    <sys:Double x:Key="Dim.ButtonSpacing">8</sys:Double>
-    <sys:Double x:Key="Dim.FormItemSpacing">16</sys:Double>
-    <sys:Double x:Key="Dim.PanelPadding">12</sys:Double>
+    <!-- ── Spacing (Apple-style spacing) ── -->
+    <sys:Double x:Key="Dim.ButtonSpacing">12</sys:Double>
+    <sys:Double x:Key="Dim.FormItemSpacing">20</sys:Double>
+    <sys:Double x:Key="Dim.PanelPadding">16</sys:Double>
 
-    <!-- ── Control sizes (Dev Plan §5/§7) ── -->
+    <!-- ── Control sizes (Apple-style with larger radius) ── -->
     <sys:Double x:Key="Dim.ControlHeight">44</sys:Double>
-    <sys:Double x:Key="Dim.CornerRadius">4</sys:Double>
+    <sys:Double x:Key="Dim.CornerRadius">10</sys:Double>
     <sys:Double x:Key="Dim.ToggleWidth">50</sys:Double>
     <sys:Double x:Key="Dim.ToggleHeight">26</sys:Double>
     <sys:Double x:Key="Dim.NavButtonSize">60</sys:Double>
@@ -34,16 +40,16 @@
     <sys:Double x:Key="Dim.ListItemHeight">48</sys:Double>
     <sys:Double x:Key="Dim.SeekBarThumbSize">20</sys:Double>
     <sys:Double x:Key="Dim.ToggleThumbSize">22</sys:Double>
-    <sys:Double x:Key="Dim.ToggleTrackRadius">13</sys:Double>
-    <sys:Double x:Key="Dim.ToggleThumbRadius">11</sys:Double>
-    <sys:Double x:Key="Dim.ComboBoxArrowWidth">30</sys:Double>
+    <CornerRadius x:Key="Dim.ToggleTrackRadius">13</CornerRadius>
+    <CornerRadius x:Key="Dim.ToggleThumbRadius">11</CornerRadius>
+    <GridLength x:Key="Dim.ComboBoxArrowWidth">30</GridLength>
 
     <!-- ── Button sizes ── -->
     <sys:Double x:Key="Dim.ButtonMinWidth">120</sys:Double>
 
-    <!-- ── Toolbar layout (Sprint 2.1) ── -->
+    <!-- ── Toolbar layout (Apple-style) ── -->
     <sys:Double x:Key="Dim.LogoSize">36</sys:Double>
-    <sys:Double x:Key="Dim.CornerRadiusSmall">3</sys:Double>
+    <sys:Double x:Key="Dim.CornerRadiusSmall">6</sys:Double>
     <Thickness x:Key="Dim.ToolbarBorderThickness">0,0,0,1</Thickness>
     <Thickness x:Key="Dim.LogoAreaMargin">8,0</Thickness>
     <Thickness x:Key="Dim.LogoBoxMargin">0,0,8,0</Thickness>
@@ -54,7 +60,7 @@
     <Thickness x:Key="Dim.ToolbarUserMargin">8,0</Thickness>
     <Thickness x:Key="Dim.BedBorderMargin">8,0,12,0</Thickness>
     <Thickness x:Key="Dim.BedBorderPadding">8,4</Thickness>
-    <CornerRadius x:Key="Dim.CornerRadiusSmallAll">3</CornerRadius>
+    <CornerRadius x:Key="Dim.CornerRadiusSmallAll">6</CornerRadius>
 
     <!-- ── StatusBarPanel layout (Sprint 2.3) ── -->
     <Thickness x:Key="Dim.StatusBarBorderThickness">0,1,0,0</Thickness>
@@ -79,29 +85,29 @@
     <Thickness x:Key="Dim.NavButtonMargin">6,4</Thickness>
     <Thickness x:Key="Dim.NavLabelMargin">0,1,0,0</Thickness>
 
-    <!-- ── CornerRadius resources ── -->
-    <CornerRadius x:Key="Dim.CornerRadiusAll">4</CornerRadius>
-    <CornerRadius x:Key="Dim.CornerRadiusBottom">0,0,4,4</CornerRadius>
+    <!-- ── CornerRadius resources (Apple-style) ── -->
+    <CornerRadius x:Key="Dim.CornerRadiusAll">10</CornerRadius>
+    <CornerRadius x:Key="Dim.CornerRadiusBottom">0,0,10,10</CornerRadius>
 
-    <!-- ── Thickness / Padding resources ── -->
-    <Thickness x:Key="Dim.PanelPaddingThickness">12</Thickness>
-    <Thickness x:Key="Dim.FormItemMargin">0,0,0,16</Thickness>
-    <Thickness x:Key="Dim.ButtonSpacingMargin">4,0</Thickness>
-    <Thickness x:Key="Dim.ButtonPadding">24,12</Thickness>
-    <Thickness x:Key="Dim.InputPadding">12,10</Thickness>
-    <Thickness x:Key="Dim.DefaultButtonPadding">16,10</Thickness>
+    <!-- ── Thickness / Padding resources (Apple-style spacing) ── -->
+    <Thickness x:Key="Dim.PanelPaddingThickness">16</Thickness>
+    <Thickness x:Key="Dim.FormItemMargin">0,0,0,20</Thickness>
+    <Thickness x:Key="Dim.ButtonSpacingMargin">8,0</Thickness>
+    <Thickness x:Key="Dim.ButtonPadding">28,12</Thickness>
+    <Thickness x:Key="Dim.InputPadding">14,11</Thickness>
+    <Thickness x:Key="Dim.DefaultButtonPadding">18,11</Thickness>
     <Thickness x:Key="Dim.ToggleItemPadding">12,8</Thickness>
     <Thickness x:Key="Dim.ComboBoxContentMargin">14,0,30,0</Thickness>
     <Thickness x:Key="Dim.SeparatorMargin">0,8</Thickness>
     <Thickness x:Key="Dim.ToggleThumbMarginOff">2,0,0,0</Thickness>
     <Thickness x:Key="Dim.ToggleThumbMarginOn">0,0,2,0</Thickness>
 
-    <!-- ── Scalar sizes (non-layout) ── -->
-    <sys:Double x:Key="Dim.SeparatorHeight">1</sys:Double>
-    <sys:Double x:Key="Dim.BorderThicknessThin">1</sys:Double>
-    <sys:Double x:Key="Dim.BorderThicknessFocus">2</sys:Double>
-    <sys:Double x:Key="Dim.ShadowDepth">1</sys:Double>
-    <sys:Double x:Key="Dim.ShadowBlurRadius">2</sys:Double>
-    <sys:Double x:Key="Dim.ShadowOpacity">0.3</sys:Double>
+    <!-- ── Scalar sizes (Apple-style shadows) ── -->
+    <sys:Double x:Key="Dim.SeparatorHeight">0.5</sys:Double>
+    <Thickness x:Key="Dim.BorderThicknessThin">0.5</Thickness>
+    <sys:Double x:Key="Dim.BorderThicknessFocus">3</sys:Double>
+    <sys:Double x:Key="Dim.ShadowDepth">2</sys:Double>
+    <sys:Double x:Key="Dim.ShadowBlurRadius">8</sys:Double>
+    <sys:Double x:Key="Dim.ShadowOpacity">0.15</sys:Double>
 
 </ResourceDictionary>

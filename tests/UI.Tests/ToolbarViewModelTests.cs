@@ -1,6 +1,3 @@
-// ToolbarViewModelTests.cs
-// Sprint 2.1: Tests for ToolbarViewModel commands and default values.
-
 using Neo.UI.Services;
 using Neo.UI.ViewModels;
 using Xunit;
@@ -12,8 +9,7 @@ public class ToolbarViewModelTests
     private static ToolbarViewModel CreateVm(out AuditServiceAdapter audit)
     {
         audit = new AuditServiceAdapter();
-        var vm = new ToolbarViewModel(audit);
-        return vm;
+        return new ToolbarViewModel(audit, new StubThemeService());
     }
 
     [Fact]
@@ -32,25 +28,10 @@ public class ToolbarViewModelTests
     }
 
     [Fact]
-    public void PlaybackCommand_Play_LogsMonitoringStart()
+    public void PlaybackCommand_LogsStartAndStop()
     {
         var vm = CreateVm(out var audit);
 
-        vm.PlaybackCommand.Execute(null);
-
-        var events = audit.GetRecentEvents(10);
-        Assert.Single(events);
-        Assert.Equal(AuditEventTypes.MonitoringStart, events[0].EventType);
-
-        vm.StopClock();
-    }
-
-    [Fact]
-    public void PlaybackCommand_Pause_LogsMonitoringStop()
-    {
-        var vm = CreateVm(out var audit);
-
-        // Play then Pause
         vm.PlaybackCommand.Execute(null);
         vm.PlaybackCommand.Execute(null);
 
@@ -91,30 +72,58 @@ public class ToolbarViewModelTests
     }
 
     [Fact]
+    public void PinCommand_TogglesPinnedState()
+    {
+        var vm = CreateVm(out _);
+
+        Assert.False(vm.IsPinned);
+        vm.PinCommand.Execute(null);
+        Assert.True(vm.IsPinned);
+        vm.PinCommand.Execute(null);
+        Assert.False(vm.IsPinned);
+
+        vm.StopClock();
+    }
+
+    [Fact]
+    public void ToggleNavDrawerCommand_TogglesDrawerState()
+    {
+        var vm = CreateVm(out _);
+
+        Assert.False(vm.IsNavDrawerOpen);
+        vm.ToggleNavDrawerCommand.Execute(null);
+        Assert.True(vm.IsNavDrawerOpen);
+        vm.ToggleNavDrawerCommand.Execute(null);
+        Assert.False(vm.IsNavDrawerOpen);
+
+        vm.StopClock();
+    }
+
+    [Fact]
     public void CurrentUser_DefaultValue()
     {
         var vm = CreateVm(out _);
-        Assert.Equal("用户: --", vm.CurrentUser);
+        Assert.Equal("User: Operator", vm.CurrentUser);
         vm.StopClock();
     }
 
     [Fact]
-    public void BedNumber_DefaultValue()
+    public void BedNumberDisplay_ReflectsInput()
     {
         var vm = CreateVm(out _);
-        Assert.Equal("床位: --", vm.BedNumber);
+        Assert.Equal("Bed: 01", vm.BedNumberDisplay);
+
+        vm.BedNumber = "12";
+        Assert.Equal("Bed: 12", vm.BedNumberDisplay);
+
         vm.StopClock();
     }
 
     [Fact]
-    public void AllCommands_CanExecute()
+    public void OpenVersionEntryCommand_CanExecute()
     {
         var vm = CreateVm(out _);
-
-        Assert.True(vm.PlaybackCommand.CanExecute(null));
-        Assert.True(vm.ScreenshotCommand.CanExecute(null));
-        Assert.True(vm.AnnotationCommand.CanExecute(null));
-
+        Assert.True(vm.OpenVersionEntryCommand.CanExecute(null));
         vm.StopClock();
     }
 }

@@ -1,26 +1,23 @@
 <Application x:Class="Neo.UI.App"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:vm="clr-namespace:Neo.UI.ViewModels"
-             >
+             xmlns:vm="clr-namespace:Neo.UI.ViewModels">
     <Application.Resources>
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries>
-                <!-- Sprint 1.3: Style system — order matters (Colors → Fonts → Controls) -->
                 <ResourceDictionary Source="Styles/Colors.xaml"/>
                 <ResourceDictionary Source="Styles/Fonts.xaml"/>
+                <ResourceDictionary Source="Styles/Dimensions.xaml"/>
                 <ResourceDictionary Source="Styles/Buttons.xaml"/>
                 <ResourceDictionary Source="Styles/TextBoxes.xaml"/>
                 <ResourceDictionary Source="Styles/ComboBoxes.xaml"/>
                 <ResourceDictionary Source="Styles/Toggles.xaml"/>
-                <ResourceDictionary Source="Styles/Dimensions.xaml"/>
                 <ResourceDictionary Source="Styles/Controls.xaml"/>
                 <ResourceDictionary Source="Styles/QualityStates.xaml"/>
             </ResourceDictionary.MergedDictionaries>
 
-            <!-- Sprint 1.2-fix: DataTemplate mappings for ViewModel → View -->
             <DataTemplate DataType="{x:Type vm:HomeViewModel}">
-                <TextBlock Text="Home — Monitoring View"
+                <TextBlock Text="Home - Monitoring View"
                            Foreground="{StaticResource BorderDarkBrush}"
                            FontSize="{StaticResource FontSize.Body}"
                            HorizontalAlignment="Center"

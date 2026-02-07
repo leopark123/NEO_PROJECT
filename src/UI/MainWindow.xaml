@@ -1,168 +1,63 @@
 <Window x:Class="Neo.UI.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        xmlns:vm="clr-namespace:Neo.UI.ViewModels"
         xmlns:controls="clr-namespace:Neo.UI.Views.Controls"
         Title="NEO aEEG + NIRS Monitor"
-        Width="1280" Height="720"
-        MinWidth="1024" MinHeight="600"
+        Width="1280"
+        Height="720"
+        MinWidth="1024"
+        MinHeight="600"
         WindowState="Maximized"
         Background="{StaticResource BackgroundDarkBrush}">
 
-    <!-- S3-UI-02: Main interface static layout per UI_SPEC.md v1.2 -->
-    <!-- All regions are visible placeholders — NO business logic, NO data sources -->
-
     <DockPanel LastChildFill="True">
-
-        <!-- ============================================================ -->
-        <!-- TOP TOOLBAR (60px) — UI_SPEC §4.1 row 1                      -->
-        <!-- Sprint 2.1: Extracted to ToolbarPanel UserControl             -->
-        <!-- ============================================================ -->
         <controls:ToolbarPanel DockPanel.Dock="Top"
                                DataContext="{Binding Toolbar}"/>
 
-        <!-- ============================================================ -->
-        <!-- BOTTOM STATUS BAR (30px) — UI_SPEC §8                        -->
-        <!-- Sprint 2.3: Extracted to StatusBarPanel UserControl           -->
-        <!-- ============================================================ -->
         <controls:StatusBarPanel DockPanel.Dock="Bottom"
-                                  DataContext="{Binding Status}"/>
+                                 DataContext="{Binding Status}"/>
 
-        <!-- ============================================================ -->
-        <!-- LEFT NAVIGATION BAR (60px) — UI_SPEC §4.1 column 1          -->
-        <!-- Sprint 2.2: Extracted to NavPanel UserControl                 -->
-        <!-- ============================================================ -->
-        <controls:NavPanel DockPanel.Dock="Left"/>
+        <controls:ChannelControlPanel DockPanel.Dock="Right"
+                                      DataContext="{Binding Waveform}"/>
 
-        <!-- ============================================================ -->
-        <!-- RIGHT: VIDEO + NIRS PANEL (300px) — UI_SPEC §4.1 column 4   -->
-        <!-- ============================================================ -->
         <Border x:Name="RightVideoNirsPanel"
                 DockPanel.Dock="Right"
-                Width="{StaticResource Dim.RightPanelWidth}" MinWidth="{StaticResource Dim.RightPanelWidth}"
+                Width="{StaticResource Dim.RightPanelWidth}"
+                MinWidth="{StaticResource Dim.RightPanelWidth}"
                 Background="{StaticResource BackgroundBrush}"
                 BorderBrush="{StaticResource BorderBrush}"
-                BorderThickness="1,0,0,0">
+                BorderThickness="{StaticResource Dim.ParamBorderThickness}">
             <Grid>
                 <Grid.RowDefinitions>
-                    <!-- Video preview -->
                     <RowDefinition Height="*"/>
-                    <!-- NIRS channels -->
                     <RowDefinition Height="*"/>
                 </Grid.RowDefinitions>
 
-                <!-- Video preview placeholder — UI_SPEC §5.4 -->
-                <Border Grid.Row="0"
-                        Margin="8"
-                        Background="{StaticResource BackgroundDarkBrush}"
-                        CornerRadius="4"
-                        BorderBrush="{StaticResource BorderBrush}"
-                        BorderThickness="1">
-                    <Grid>
-                        <TextBlock x:Name="VideoPreviewPlaceholder"
-                                   Text="Video Preview&#x0a;视频预览&#x0a;No Camera"
-                                   Foreground="{StaticResource TextDarkMutedBrush}"
-                                   FontSize="{StaticResource FontSize.Body}"
-                                   TextAlignment="Center"
-                                   HorizontalAlignment="Center"
-                                   VerticalAlignment="Center"/>
-                    </Grid>
-                </Border>
+                <controls:VideoPanel Grid.Row="0"
+                                     DataContext="{Binding Video}"/>
 
-                <!-- NIRS channels placeholder — UI_SPEC §5.3 -->
-                <Border Grid.Row="1"
-                        Margin="8,0,8,8"
-                        Background="{StaticResource BackgroundDarkBrush}"
-                        CornerRadius="4"
-                        BorderBrush="{StaticResource BorderBrush}"
-                        BorderThickness="1">
-                    <StackPanel VerticalAlignment="Center" Margin="12">
-                        <TextBlock Text="NIRS 通道控制 (1-6)"
-                                   Foreground="{StaticResource NirsTrendBrush}"
-                                   FontSize="{StaticResource FontSize.ParamValue}"
-                                   FontWeight="SemiBold"
-                                   Margin="0,0,0,4"/>
-                        <TextBlock Text="组织氧饱和度 rSO₂"
-                                   Foreground="{StaticResource TextDarkTertiaryBrush}"
-                                   FontSize="{StaticResource FontSize.Caption}"
-                                   Margin="0,0,0,8"/>
-                        <!-- 6 NIRS channels with toggle — UI_SPEC §5.3 每通道独立开关 -->
-                        <Grid Margin="0,2">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="Auto"/>
-                                <ColumnDefinition Width="*"/>
-                            </Grid.ColumnDefinitions>
-                            <CheckBox x:Name="NirsCh1Toggle" Grid.Column="0" IsChecked="True" IsEnabled="False" VerticalAlignment="Center" Margin="0,0,6,0"/>
-                            <TextBlock x:Name="NirsCh1Placeholder" Grid.Column="1" Text="CH1 rSO₂: --%" Foreground="{StaticResource TextDarkSecondaryBrush}" FontSize="{StaticResource FontSize.StatusBar}" FontFamily="{StaticResource Font.Mono}" VerticalAlignment="Center"/>
-                        </Grid>
-                        <Grid Margin="0,2">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="Auto"/>
-                                <ColumnDefinition Width="*"/>
-                            </Grid.ColumnDefinitions>
-                            <CheckBox x:Name="NirsCh2Toggle" Grid.Column="0" IsChecked="True" IsEnabled="False" VerticalAlignment="Center" Margin="0,0,6,0"/>
-                            <TextBlock x:Name="NirsCh2Placeholder" Grid.Column="1" Text="CH2 rSO₂: --%" Foreground="{StaticResource TextDarkSecondaryBrush}" FontSize="{StaticResource FontSize.StatusBar}" FontFamily="{StaticResource Font.Mono}" VerticalAlignment="Center"/>
-                        </Grid>
-                        <Grid Margin="0,2">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="Auto"/>
-                                <ColumnDefinition Width="*"/>
-                            </Grid.ColumnDefinitions>
-                            <CheckBox x:Name="NirsCh3Toggle" Grid.Column="0" IsChecked="True" IsEnabled="False" VerticalAlignment="Center" Margin="0,0,6,0"/>
-                            <TextBlock x:Name="NirsCh3Placeholder" Grid.Column="1" Text="CH3 rSO₂: --%" Foreground="{StaticResource TextDarkSecondaryBrush}" FontSize="{StaticResource FontSize.StatusBar}" FontFamily="{StaticResource Font.Mono}" VerticalAlignment="Center"/>
-                        </Grid>
-                        <Grid Margin="0,2">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="Auto"/>
-                                <ColumnDefinition Width="*"/>
-                            </Grid.ColumnDefinitions>
-                            <CheckBox x:Name="NirsCh4Toggle" Grid.Column="0" IsChecked="True" IsEnabled="False" VerticalAlignment="Center" Margin="0,0,6,0"/>
-                            <TextBlock x:Name="NirsCh4Placeholder" Grid.Column="1" Text="CH4 rSO₂: --%" Foreground="{StaticResource TextDarkSecondaryBrush}" FontSize="{StaticResource FontSize.StatusBar}" FontFamily="{StaticResource Font.Mono}" VerticalAlignment="Center"/>
-                        </Grid>
-                        <Grid Margin="0,2">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="Auto"/>
-                                <ColumnDefinition Width="*"/>
-                            </Grid.ColumnDefinitions>
-                            <CheckBox x:Name="NirsCh5Toggle" Grid.Column="0" IsChecked="True" IsEnabled="False" VerticalAlignment="Center" Margin="0,0,6,0"/>
-                            <TextBlock x:Name="NirsCh5Placeholder" Grid.Column="1" Text="CH5 rSO₂: --%" Foreground="{StaticResource TextDarkSecondaryBrush}" FontSize="{StaticResource FontSize.StatusBar}" FontFamily="{StaticResource Font.Mono}" VerticalAlignment="Center"/>
-                        </Grid>
-                        <Grid Margin="0,2">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="Auto"/>
-                                <ColumnDefinition Width="*"/>
-                            </Grid.ColumnDefinitions>
-                            <CheckBox x:Name="NirsCh6Toggle" Grid.Column="0" IsChecked="True" IsEnabled="False" VerticalAlignment="Center" Margin="0,0,6,0"/>
-                            <TextBlock x:Name="NirsCh6Placeholder" Grid.Column="1" Text="CH6 rSO₂: --%" Foreground="{StaticResource TextDarkSecondaryBrush}" FontSize="{StaticResource FontSize.StatusBar}" FontFamily="{StaticResource Font.Mono}" VerticalAlignment="Center"/>
-                        </Grid>
-                    </StackPanel>
-                </Border>
+                <controls:NirsPanel Grid.Row="1"
+                                    DataContext="{Binding Nirs}"/>
             </Grid>
         </Border>
 
-        <!-- ============================================================ -->
-        <!-- RIGHT: PARAMETER CONTROL PANEL (150px) — UI_SPEC §4.1 col 3 -->
-        <!-- Sprint 2.4: Extracted to ChannelControlPanel UserControl      -->
-        <!-- ============================================================ -->
-        <controls:ChannelControlPanel DockPanel.Dock="Right"
-                                       DataContext="{Binding Waveform}"/>
+        <controls:NavPanel DockPanel.Dock="Left">
+            <controls:NavPanel.Style>
+                <Style TargetType="{x:Type controls:NavPanel}">
+                    <Setter Property="Visibility" Value="Collapsed"/>
+                    <Style.Triggers>
+                        <DataTrigger Binding="{Binding Toolbar.IsNavDrawerOpen}" Value="True">
+                            <Setter Property="Visibility" Value="Visible"/>
+                        </DataTrigger>
+                    </Style.Triggers>
+                </Style>
+            </controls:NavPanel.Style>
+        </controls:NavPanel>
 
-        <!-- ============================================================ -->
-        <!-- CENTER: WAVEFORM DISPLAY AREA — UI_SPEC §4.1/§4.2             -->
-        <!-- Sprint 1.2-fix: ContentControl for ViewModel-driven page      -->
-        <!-- switching. Waveform placeholders shown when Home is active.    -->
-        <!-- Sprint 3.1: Added WaveformPanel for D3D rendering              -->
-        <!-- ============================================================ -->
-        <Grid x:Name="CenterWaveformArea" Background="{StaticResource BackgroundDarkBrush}">
-
-            <!-- Navigation-driven content overlay (Sprint 1.2-fix P1-1) -->
-            <!-- When CurrentPage is HomeViewModel, the DataTemplate is minimal
-                 and the waveform placeholders below remain visible.
-                 When CurrentPage is another ViewModel, its DataTemplate fills this area. -->
+        <Grid Background="{StaticResource BackgroundDarkBrush}">
             <ContentControl Content="{Binding CurrentPage}"
                             Panel.ZIndex="0"/>
 
-            <!-- Sprint 3.1: D3D-rendered waveform panel (replaces placeholders) -->
             <controls:WaveformPanel x:Name="WaveformRenderPanel"
                                     Panel.ZIndex="1">
                 <controls:WaveformPanel.Style>
@@ -176,263 +71,6 @@
                     </Style>
                 </controls:WaveformPanel.Style>
             </controls:WaveformPanel>
-
-            <!-- Static waveform placeholders (Sprint 3.1: hidden, kept for reference) -->
-            <!-- These placeholders are preserved for fallback/debugging but hidden by default -->
-            <Grid x:Name="WaveformPlaceholderGrid"
-                  Panel.ZIndex="0"
-                  Visibility="Collapsed">
-            <Grid.RowDefinitions>
-                <!-- aEEG Ch1 trend (15%) -->
-                <RowDefinition Height="15*"/>
-                <!-- EEG Ch1 waveform (20%) -->
-                <RowDefinition Height="20*"/>
-                <!-- aEEG Ch2 trend (15%) -->
-                <RowDefinition Height="15*"/>
-                <!-- EEG Ch2 waveform (20%) -->
-                <RowDefinition Height="20*"/>
-                <!-- NIRS trend (20%) -->
-                <RowDefinition Height="20*"/>
-                <!-- SeekBar / Timeline (10%) -->
-                <RowDefinition Height="10*"/>
-            </Grid.RowDefinitions>
-
-            <!-- aEEG Ch1 Trend — UI_SPEC §5.2 -->
-            <Border Grid.Row="0"
-                    BorderBrush="{StaticResource BorderSubtleBrush}"
-                    BorderThickness="0,0,0,1">
-                <Grid>
-                    <TextBlock x:Name="AeegCh1Label"
-                               Text="aEEG Ch1 (C3-P3)"
-                               Foreground="{StaticResource EegChannel1Brush}"
-                               FontSize="{StaticResource FontSize.StatusBar}"
-                               Margin="8,4,0,0"
-                               VerticalAlignment="Top"/>
-                    <TextBlock Text="半对数 Y: 0–200 μV"
-                               Foreground="{StaticResource BorderDarkBrush}"
-                               FontSize="{StaticResource FontSize.Caption}"
-                               HorizontalAlignment="Right"
-                               Margin="0,4,8,0"
-                               VerticalAlignment="Top"/>
-                    <Border x:Name="AeegCh1Placeholder"
-                            Margin="40,20,8,4"
-                            Background="{StaticResource PanelBrush}"
-                            CornerRadius="2">
-                        <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
-                            <TextBlock Text="aEEG 趋势区 — Ch1"
-                                       Foreground="{StaticResource PlaceholderDarkBrush}"
-                                       FontSize="{StaticResource FontSize.Small}"
-                                       HorizontalAlignment="Center"/>
-                            <TextBlock Text="aEEG 3h"
-                                       Foreground="{StaticResource EegChannel1Brush}"
-                                       FontSize="{StaticResource FontSize.Body}"
-                                       FontWeight="Bold"
-                                       HorizontalAlignment="Center"
-                                       Margin="0,4,0,0"/>
-                        </StackPanel>
-                    </Border>
-                    <!-- Quality indicator overlay — UI_SPEC §7 (缺失/饱和/导联脱落) -->
-                    <Border x:Name="AeegCh1QualityOverlay"
-                            Margin="40,20,8,4"
-                            Background="Transparent"
-                            IsHitTestVisible="False"
-                            Visibility="Collapsed"/>
-                </Grid>
-            </Border>
-
-            <!-- EEG Ch1 Waveform — UI_SPEC §5.1 -->
-            <Border Grid.Row="1"
-                    BorderBrush="{StaticResource BorderSubtleBrush}"
-                    BorderThickness="0,0,0,1">
-                <Grid>
-                    <TextBlock x:Name="EegCh1Label"
-                               Text="EEG Ch1 (C3-P3)"
-                               Foreground="{StaticResource EegChannel1Brush}"
-                               FontSize="{StaticResource FontSize.StatusBar}"
-                               Margin="8,4,0,0"
-                               VerticalAlignment="Top"/>
-                    <TextBlock Text="线性 Y: ±100 μV"
-                               Foreground="{StaticResource BorderDarkBrush}"
-                               FontSize="{StaticResource FontSize.Caption}"
-                               HorizontalAlignment="Right"
-                               Margin="0,4,8,0"
-                               VerticalAlignment="Top"/>
-                    <Border x:Name="EegCh1WaveformPlaceholder"
-                            Margin="40,20,8,4"
-                            Background="{StaticResource PanelBrush}"
-                            CornerRadius="2">
-                        <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
-                            <TextBlock Text="EEG 波形区 — Ch1"
-                                       Foreground="{StaticResource PlaceholderDarkBrush}"
-                                       FontSize="{StaticResource FontSize.Small}"
-                                       HorizontalAlignment="Center"/>
-                            <TextBlock Text="EEG 15s"
-                                       Foreground="{StaticResource EegChannel1Brush}"
-                                       FontSize="{StaticResource FontSize.Body}"
-                                       FontWeight="Bold"
-                                       HorizontalAlignment="Center"
-                                       Margin="0,4,0,0"/>
-                        </StackPanel>
-                    </Border>
-                    <!-- Quality indicator overlay — UI_SPEC §7 (缺失/饱和/导联脱落) -->
-                    <Border x:Name="EegCh1QualityOverlay"
-                            Margin="40,20,8,4"
-                            Background="Transparent"
-                            IsHitTestVisible="False"
-                            Visibility="Collapsed"/>
-                </Grid>
-            </Border>
-
-            <!-- aEEG Ch2 Trend — UI_SPEC §5.2 -->
-            <Border Grid.Row="2"
-                    BorderBrush="{StaticResource BorderSubtleBrush}"
-                    BorderThickness="0,0,0,1">
-                <Grid>
-                    <TextBlock x:Name="AeegCh2Label"
-                               Text="aEEG Ch2 (C4-P4)"
-                               Foreground="{StaticResource EegChannel2Brush}"
-                               FontSize="{StaticResource FontSize.StatusBar}"
-                               Margin="8,4,0,0"
-                               VerticalAlignment="Top"/>
-                    <TextBlock Text="半对数 Y: 0–200 μV"
-                               Foreground="{StaticResource BorderDarkBrush}"
-                               FontSize="{StaticResource FontSize.Caption}"
-                               HorizontalAlignment="Right"
-                               Margin="0,4,8,0"
-                               VerticalAlignment="Top"/>
-                    <Border x:Name="AeegCh2Placeholder"
-                            Margin="40,20,8,4"
-                            Background="{StaticResource PanelBrush}"
-                            CornerRadius="2">
-                        <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
-                            <TextBlock Text="aEEG 趋势区 — Ch2"
-                                       Foreground="{StaticResource PlaceholderDarkBrush}"
-                                       FontSize="{StaticResource FontSize.Small}"
-                                       HorizontalAlignment="Center"/>
-                            <TextBlock Text="aEEG 3h"
-                                       Foreground="{StaticResource EegChannel2Brush}"
-                                       FontSize="{StaticResource FontSize.Body}"
-                                       FontWeight="Bold"
-                                       HorizontalAlignment="Center"
-                                       Margin="0,4,0,0"/>
-                        </StackPanel>
-                    </Border>
-                    <!-- Quality indicator overlay — UI_SPEC §7 (缺失/饱和/导联脱落) -->
-                    <Border x:Name="AeegCh2QualityOverlay"
-                            Margin="40,20,8,4"
-                            Background="Transparent"
-                            IsHitTestVisible="False"
-                            Visibility="Collapsed"/>
-                </Grid>
-            </Border>
-
-            <!-- EEG Ch2 Waveform — UI_SPEC §5.1 -->
-            <Border Grid.Row="3"
-                    BorderBrush="{StaticResource BorderSubtleBrush}"
-                    BorderThickness="0,0,0,1">
-                <Grid>
-                    <TextBlock x:Name="EegCh2Label"
-                               Text="EEG Ch2 (C4-P4)"
-                               Foreground="{StaticResource EegChannel2Brush}"
-                               FontSize="{StaticResource FontSize.StatusBar}"
-                               Margin="8,4,0,0"
-                               VerticalAlignment="Top"/>
-                    <TextBlock Text="线性 Y: ±100 μV"
-                               Foreground="{StaticResource BorderDarkBrush}"
-                               FontSize="{StaticResource FontSize.Caption}"
-                               HorizontalAlignment="Right"
-                               Margin="0,4,8,0"
-                               VerticalAlignment="Top"/>
-                    <Border x:Name="EegCh2WaveformPlaceholder"
-                            Margin="40,20,8,4"
-                            Background="{StaticResource PanelBrush}"
-                            CornerRadius="2">
-                        <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
-                            <TextBlock Text="EEG 波形区 — Ch2"
-                                       Foreground="{StaticResource PlaceholderDarkBrush}"
-                                       FontSize="{StaticResource FontSize.Small}"
-                                       HorizontalAlignment="Center"/>
-                            <TextBlock Text="EEG 15s"
-                                       Foreground="{StaticResource EegChannel2Brush}"
-                                       FontSize="{StaticResource FontSize.Body}"
-                                       FontWeight="Bold"
-                                       HorizontalAlignment="Center"
-                                       Margin="0,4,0,0"/>
-                        </StackPanel>
-                    </Border>
-                    <!-- Quality indicator overlay — UI_SPEC §7 (缺失/饱和/导联脱落) -->
-                    <Border x:Name="EegCh2QualityOverlay"
-                            Margin="40,20,8,4"
-                            Background="Transparent"
-                            IsHitTestVisible="False"
-                            Visibility="Collapsed"/>
-                </Grid>
-            </Border>
-
-            <!-- NIRS Trend — UI_SPEC §5.3 -->
-            <Border Grid.Row="4"
-                    BorderBrush="{StaticResource BorderSubtleBrush}"
-                    BorderThickness="0,0,0,1">
-                <Grid>
-                    <TextBlock x:Name="NirsTrendLabel"
-                               Text="NIRS 趋势 (6ch) — 组织氧饱和度"
-                               Foreground="{StaticResource NirsTrendBrush}"
-                               FontSize="{StaticResource FontSize.StatusBar}"
-                               Margin="8,4,0,0"
-                               VerticalAlignment="Top"/>
-                    <TextBlock Text="Y: 0–100% rSO₂"
-                               Foreground="{StaticResource BorderDarkBrush}"
-                               FontSize="{StaticResource FontSize.Caption}"
-                               HorizontalAlignment="Right"
-                               Margin="0,4,8,0"
-                               VerticalAlignment="Top"/>
-                    <Border x:Name="NirsTrendPlaceholder"
-                            Margin="40,20,8,4"
-                            Background="{StaticResource PanelBrush}"
-                            CornerRadius="2">
-                        <TextBlock Text="NIRS 趋势区 — 6通道占位 [Blocked]"
-                                   Foreground="{StaticResource PlaceholderDarkBrush}"
-                                   FontSize="{StaticResource FontSize.Small}"
-                                   HorizontalAlignment="Center"
-                                   VerticalAlignment="Center"/>
-                    </Border>
-                    <!-- Quality indicator overlay — UI_SPEC §7 (缺失/饱和/导联脱落) -->
-                    <Border x:Name="NirsTrendQualityOverlay"
-                            Margin="40,20,8,4"
-                            Background="Transparent"
-                            IsHitTestVisible="False"
-                            Visibility="Collapsed"/>
-                </Grid>
-            </Border>
-
-            <!-- SeekBar / Timeline — UI_SPEC §6.3 -->
-            <Border Grid.Row="5"
-                    Background="{StaticResource BackgroundAltBrush}">
-                <Grid>
-                    <TextBlock x:Name="TimelineLabel"
-                               Text="时间轴"
-                               Foreground="{StaticResource TextDarkSecondaryBrush}"
-                               FontSize="{StaticResource FontSize.Caption}"
-                               Margin="8,4,0,0"
-                               VerticalAlignment="Top"/>
-                    <Border x:Name="TimelineSeekBarPlaceholder"
-                            Margin="40,18,8,8"
-                            Background="{StaticResource BorderSubtleBrush}"
-                            CornerRadius="3">
-                        <TextBlock Text="SeekBar 时间轴占位"
-                                   Foreground="{StaticResource BorderDarkBrush}"
-                                   FontSize="{StaticResource FontSize.StatusBar}"
-                                   HorizontalAlignment="Center"
-                                   VerticalAlignment="Center"/>
-                    </Border>
-                </Grid>
-            </Border>
-
-            </Grid>
-            <!-- END WaveformPlaceholderGrid -->
-
         </Grid>
-        <!-- END CENTER WAVEFORM AREA -->
-
     </DockPanel>
 </Window>

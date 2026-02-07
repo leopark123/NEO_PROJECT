@@ -1,50 +1,21 @@
-// WaveformPanel.xaml.cs
-// Sprint 3.1: D3D11 → D2D1 → WriteableBitmap rendering host
-//
-// Source: NEO_UI_Development_Plan_WPF.md §8
-// CHARTER: R-01 render callback O(1)
-//
-// This UserControl:
-// 1. Creates WaveformRenderHost on Loaded
-// 2. Binds Image.Source to RenderHost.ImageSource
-// 3. Handles SizeChanged to resize render target
-// 4. Handles device lost with recovery UI
-
-using System.Diagnostics;
+using System.ComponentModel;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using Neo.Mock;
 using Neo.UI.Rendering;
+using Neo.UI.ViewModels;
 
 namespace Neo.UI.Views.Controls;
 
-/// <summary>
-/// Hosts the D3D11 → D2D1 → WPF rendering pipeline for waveform display.
-/// </summary>
 public partial class WaveformPanel : UserControl
 {
     private WaveformRenderHost? _renderHost;
     private MockEegSource? _mockEegSource;
+    private MainWindowViewModel? _boundViewModel;
     private bool _deviceLost;
+    private bool _isSeekDragging;
 
-#if DEBUG
-    /// <summary>
-    /// DEBUG ONLY: Simulates device lost for testing recovery UI.
-    /// Call via Immediate Window: ((Neo.UI.Views.Controls.WaveformPanel)Application.Current.MainWindow.FindName("WaveformRenderPanel")).SimulateDeviceLost()
-    /// Or press Ctrl+Shift+D when panel is focused.
-    /// </summary>
-    public void SimulateDeviceLost()
-    {
-        Debug.WriteLine("WaveformPanel: Simulating device lost...");
-        _renderHost?.Stop();
-        ShowDeviceLostOverlay();
-    }
-#endif
-
-    /// <summary>
-    /// Gets the render host for external configuration.
-    /// </summary>
     public WaveformRenderHost? RenderHost => _renderHost;
 
     public WaveformPanel()
@@ -53,31 +24,27 @@ public partial class WaveformPanel : UserControl
 
         Loaded += OnLoaded;
         Unloaded += OnUnloaded;
+        DataContextChanged += OnDataContextChanged;
         SizeChanged += OnSizeChanged;
-
-#if DEBUG
-        // Debug: Double-click to simulate device lost
-        MouseDoubleClick += (s, e) =>
-        {
-            if (e.ChangedButton == MouseButton.Left)
-            {
-                SimulateDeviceLost();
-                e.Handled = true;
-            }
-        };
-#endif
+        MouseLeftButtonDown += OnMouseLeftButtonDown;
+        MouseLeftButtonUp += OnMouseLeftButtonUp;
+        MouseMove += OnMouseMove;
     }
 
     private void OnLoaded(object sender, RoutedEventArgs e)
     {
-        if (_renderHost != null) return;
+        if (_renderHost != null)
+        {
+            BindViewModel(DataContext as MainWindowViewModel);
+            return;
+        }
 
         try
         {
-            // Create render host
-            _renderHost = new WaveformRenderHost();
+            var vm = DataContext as MainWindowViewModel;
+            _renderHost = new WaveformRenderHost(vm?.Audit, vm?.Waveform?.ThemeService);
+            _renderHost.DataBridge.EnableClinicalMockShaping = true;
 
-            // Initial resize
             int width = (int)ActualWidth;
             int height = (int)ActualHeight;
             if (width > 0 && height > 0)
@@ -85,72 +52,209 @@ public partial class WaveformPanel : UserControl
                 _renderHost.Resize(width, height);
             }
 
-            // Bind ImageSource
             RenderImage.Source = _renderHost.ImageSource;
 
-            // Sprint 3.2: Create and attach MockEegSource for simulated data
             var stopwatch = System.Diagnostics.Stopwatch.StartNew();
-            _mockEegSource = new MockEegSource(() => stopwatch.ElapsedTicks * 1_000_000 / System.Diagnostics.Stopwatch.Frequency);
+            _mockEegSource = new MockEegSource(() =>
+                stopwatch.ElapsedTicks * 1_000_000 / System.Diagnostics.Stopwatch.Frequency);
             _renderHost.AttachDataSource(_mockEegSource);
 
-            // Start rendering
+            BindViewModel(vm);
+
             _renderHost.Start();
 
-            // Hide loading overlay
             LoadingOverlay.Visibility = Visibility.Collapsed;
             ErrorOverlay.Visibility = Visibility.Collapsed;
         }
-        catch (Exception ex)
+        catch
         {
-            // Show error overlay
-            System.Diagnostics.Debug.WriteLine($"WaveformPanel initialization failed: {ex.Message}");
             ShowDeviceLostOverlay();
         }
     }
 
     private void OnUnloaded(object sender, RoutedEventArgs e)
     {
-        // Dispose MockEegSource first
-        if (_mockEegSource != null)
+        UnbindViewModel();
+
+        _mockEegSource?.Dispose();
+        _mockEegSource = null;
+
+        if (_renderHost is null)
         {
-            _mockEegSource.Dispose();
-            _mockEegSource = null;
+            return;
         }
 
-        if (_renderHost != null)
+        _renderHost.Stop();
+        _renderHost.Dispose();
+        _renderHost = null;
+    }
+
+    private void OnDataContextChanged(object sender, DependencyPropertyChangedEventArgs e)
+    {
+        if (IsLoaded)
         {
-            _renderHost.Stop();
-            _renderHost.Dispose();
-            _renderHost = null;
+            BindViewModel(e.NewValue as MainWindowViewModel);
+        }
+    }
+
+    private void BindViewModel(MainWindowViewModel? vm)
+    {
+        if (ReferenceEquals(_boundViewModel, vm))
+        {
+            return;
+        }
+
+        UnbindViewModel();
+        _boundViewModel = vm;
+
+        if (vm is null || _renderHost is null)
+        {
+            return;
+        }
+
+        _renderHost.GainMicrovoltsPerCm = vm.Waveform.SelectedGain;
+        _renderHost.YAxisRangeUv = vm.Waveform.SelectedYAxis;
+        _renderHost.AeegVisibleHours = vm.Waveform.SelectedAeegHours;
+        _renderHost.ShowGsHistogram = vm.Waveform.ShowGsHistogram;
+
+        vm.Waveform.PropertyChanged += OnWaveformPropertyChanged;
+        vm.Toolbar.PropertyChanged += OnToolbarPropertyChanged;
+
+        SyncPlaybackState(vm.Toolbar.IsPlaying);
+    }
+
+    private void UnbindViewModel()
+    {
+        if (_boundViewModel is null)
+        {
+            return;
+        }
+
+        _boundViewModel.Waveform.PropertyChanged -= OnWaveformPropertyChanged;
+        _boundViewModel.Toolbar.PropertyChanged -= OnToolbarPropertyChanged;
+        _boundViewModel = null;
+    }
+
+    private void OnWaveformPropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (_renderHost == null || sender is not WaveformViewModel vm)
+        {
+            return;
+        }
+
+        switch (e.PropertyName)
+        {
+            case nameof(WaveformViewModel.SelectedGain):
+                _renderHost.GainMicrovoltsPerCm = vm.SelectedGain;
+                break;
+            case nameof(WaveformViewModel.SelectedYAxis):
+                _renderHost.YAxisRangeUv = vm.SelectedYAxis;
+                break;
+            case nameof(WaveformViewModel.SelectedAeegHours):
+                _renderHost.AeegVisibleHours = vm.SelectedAeegHours;
+                break;
+            case nameof(WaveformViewModel.ShowGsHistogram):
+                _renderHost.ShowGsHistogram = vm.ShowGsHistogram;
+                break;
+        }
+    }
+
+    private void OnToolbarPropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (_renderHost == null || sender is not ToolbarViewModel vm)
+        {
+            return;
+        }
+
+        if (e.PropertyName == nameof(ToolbarViewModel.IsPlaying))
+        {
+            SyncPlaybackState(vm.IsPlaying);
+        }
+    }
+
+    private void SyncPlaybackState(bool isPlaying)
+    {
+        if (_renderHost is null)
+        {
+            return;
+        }
+
+        if (isPlaying)
+        {
+            _renderHost.PlaybackClock.Start();
+        }
+        else
+        {
+            _renderHost.PlaybackClock.Pause();
         }
     }
 
     private void OnSizeChanged(object sender, SizeChangedEventArgs e)
     {
-        if (_renderHost == null || _deviceLost) return;
+        if (_renderHost == null || _deviceLost)
+        {
+            return;
+        }
 
         int width = (int)e.NewSize.Width;
         int height = (int)e.NewSize.Height;
 
-        if (width > 0 && height > 0)
+        if (width <= 0 || height <= 0)
         {
-            try
-            {
-                _renderHost.Resize(width, height);
-                // Update ImageSource binding (may be new WriteableBitmap)
-                RenderImage.Source = _renderHost.ImageSource;
-            }
-            catch (Exception ex)
-            {
-                System.Diagnostics.Debug.WriteLine($"WaveformPanel resize failed: {ex.Message}");
-                ShowDeviceLostOverlay();
-            }
+            return;
+        }
+
+        try
+        {
+            _renderHost.Resize(width, height);
+            RenderImage.Source = _renderHost.ImageSource;
+        }
+        catch
+        {
+            ShowDeviceLostOverlay();
         }
     }
 
-    /// <summary>
-    /// Shows the device lost overlay and enables recovery click.
-    /// </summary>
+    private void OnMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+    {
+        if (_renderHost is null)
+        {
+            return;
+        }
+
+        var point = e.GetPosition(this);
+        if (_renderHost.TrySetSeekFromPoint(point.X, point.Y))
+        {
+            _isSeekDragging = true;
+            CaptureMouse();
+            e.Handled = true;
+        }
+    }
+
+    private void OnMouseLeftButtonUp(object sender, MouseButtonEventArgs e)
+    {
+        if (!_isSeekDragging)
+        {
+            return;
+        }
+
+        _isSeekDragging = false;
+        ReleaseMouseCapture();
+        e.Handled = true;
+    }
+
+    private void OnMouseMove(object sender, MouseEventArgs e)
+    {
+        if (!_isSeekDragging || _renderHost == null)
+        {
+            return;
+        }
+
+        var point = e.GetPosition(this);
+        _renderHost.TrySetSeekFromPoint(point.X, point.Y);
+        e.Handled = true;
+    }
+
     private void ShowDeviceLostOverlay()
     {
         _deviceLost = true;
@@ -158,27 +262,21 @@ public partial class WaveformPanel : UserControl
         ErrorOverlay.MouseLeftButtonDown += OnRecoveryClick;
     }
 
-    /// <summary>
-    /// Attempts device recovery when user clicks the error overlay.
-    /// </summary>
     private void OnRecoveryClick(object sender, MouseButtonEventArgs e)
     {
         ErrorOverlay.MouseLeftButtonDown -= OnRecoveryClick;
 
-        if (_renderHost == null)
+        if (_renderHost is null)
         {
-            // Reinitialize from scratch
-            _renderHost?.Dispose();
-            _renderHost = null;
             OnLoaded(this, new RoutedEventArgs());
+            return;
         }
-        else if (_renderHost.TryRecoverDevice())
+
+        if (_renderHost.TryRecoverDevice())
         {
-            // Recovery successful
             _deviceLost = false;
             ErrorOverlay.Visibility = Visibility.Collapsed;
 
-            // Resize and restart
             int width = (int)ActualWidth;
             int height = (int)ActualHeight;
             if (width > 0 && height > 0)
@@ -186,11 +284,11 @@ public partial class WaveformPanel : UserControl
                 _renderHost.Resize(width, height);
                 RenderImage.Source = _renderHost.ImageSource;
             }
+
             _renderHost.Start();
         }
         else
         {
-            // Recovery failed, keep overlay visible
             ErrorOverlay.MouseLeftButtonDown += OnRecoveryClick;
         }
     }

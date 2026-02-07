@@ -1,0 +1,79 @@
+<Window x:Class="Neo.UI.Views.Dialogs.DisplayDialog"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Display"
+        Width="{StaticResource Dim.DialogSmallWidth}"
+        Height="{StaticResource Dim.DialogMediumHeight}"
+        Background="{StaticResource BackgroundBrush}"
+        WindowStartupLocation="CenterOwner"
+        ResizeMode="NoResize">
+
+    <Grid Margin="{StaticResource Dim.PanelPaddingThickness}">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <TextBlock Grid.Row="0"
+                   Text="Display Settings"
+                   Style="{StaticResource TitleTextBlockStyle}"/>
+
+        <TextBlock Grid.Row="1"
+                   Text="Sweep speed"
+                   Style="{StaticResource BodyTextBlockStyle}"
+                   Margin="{StaticResource Dim.ParamSectionMargin}"/>
+        <ComboBox x:Name="SweepCombo"
+                  Grid.Row="2"
+                  Style="{StaticResource NeoComboBoxStyle}"
+                  ItemContainerStyle="{StaticResource NeoComboBoxItemStyle}">
+            <ComboBoxItem Content="6 s"/>
+            <ComboBoxItem Content="10 s"/>
+            <ComboBoxItem Content="15 s" IsSelected="True"/>
+        </ComboBox>
+
+        <CheckBox x:Name="ScaleToggle"
+                  Grid.Row="3"
+                  Content="Show scale"
+                  Foreground="{StaticResource TextOnDarkBrush}"
+                  Margin="{StaticResource Dim.ParamSectionMargin}"
+                  IsChecked="True"/>
+        <CheckBox x:Name="EegGridToggle"
+                  Grid.Row="4"
+                  Content="Show EEG grid"
+                  Foreground="{StaticResource TextOnDarkBrush}"
+                  Margin="{StaticResource Dim.ParamValueMargin}"
+                  IsChecked="True"/>
+        <CheckBox x:Name="AeegGridToggle"
+                  Grid.Row="5"
+                  Content="Show aEEG 10-minute grid"
+                  Foreground="{StaticResource TextOnDarkBrush}"
+                  Margin="{StaticResource Dim.ParamValueMargin}"
+                  IsChecked="True"/>
+
+        <TextBlock Grid.Row="6"
+                   Text="Changes take effect immediately after confirmation."
+                   Foreground="{StaticResource TextDarkTertiaryBrush}"
+                   FontSize="{StaticResource FontSize.Caption}"
+                   VerticalAlignment="Bottom"/>
+
+        <StackPanel Grid.Row="7"
+                    Orientation="Horizontal"
+                    HorizontalAlignment="Right"
+                    Margin="{StaticResource Dim.ParamSectionMargin}">
+            <Button Content="Cancel"
+                    Style="{StaticResource SecondaryButtonStyle}"
+                    Margin="{StaticResource Dim.ButtonSpacingMargin}"
+                    Click="OnCancelClick"/>
+            <Button Content="Apply"
+                    Style="{StaticResource PrimaryButtonStyle}"
+                    Margin="{StaticResource Dim.ButtonSpacingMargin}"
+                    Click="OnOkClick"/>
+        </StackPanel>
+    </Grid>
+</Window>
