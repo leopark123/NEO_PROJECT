@@ -76,6 +76,9 @@ public sealed class EegDataBridge : IDisposable
     private readonly int[] _leadOffCounts;
     private readonly SweepChannelData[] _cachedSweepData; // Cached result to avoid per-frame allocation
 
+    // Channel mapping: maps display channels (0,1) to physical channels (0-3)
+    private int[] _channelMapping = [0, 1];
+
     // aEEG trend buffers (1 Hz, 24h capacity)
     private const int AeegChannels = 2;
     private const int AeegRateHz = 1;
@@ -191,6 +194,21 @@ public sealed class EegDataBridge : IDisposable
     }
 
     /// <summary>
+    /// Sets the channel mapping for display.
+    /// Maps display channels (CH1/CH2) to physical channels (0-3).
+    /// </summary>
+    /// <param name="ch1Physical">Physical channel index for display CH1 (0-3).</param>
+    /// <param name="ch2Physical">Physical channel index for display CH2 (0-3).</param>
+    public void SetChannelMapping(int ch1Physical, int ch2Physical)
+    {
+        lock (_lock)
+        {
+            _channelMapping[0] = Math.Clamp(ch1Physical, 0, ChannelCount - 1);
+            _channelMapping[1] = Math.Clamp(ch2Physical, 0, ChannelCount - 1);
+        }
+    }
+
+    /// <summary>
     /// Creates a new EEG data bridge with sweep mode.
     /// </summary>
     /// <param name="sampleRate">Sample rate in Hz (default 160).</param>
@@ -208,7 +226,7 @@ public sealed class EegDataBridge : IDisposable
         _missingCounts = new int[ChannelCount];
         _saturatedCounts = new int[ChannelCount];
         _leadOffCounts = new int[ChannelCount];
-        _cachedSweepData = new SweepChannelData[ChannelCount];
+        _cachedSweepData = new SweepChannelData[2];  // 2 display channels (reused per frame)
         for (int i = 0; i < ChannelCount; i++)
         {
             _channelBuffers[i] = new float[_samplesPerSweep];
@@ -307,8 +325,9 @@ public sealed class EegDataBridge : IDisposable
 
     /// <summary>
     /// Gets sweep mode channel data for rendering.
+    /// Returns data for 2 display channels, mapped to physical channels based on current mapping.
     /// </summary>
-    /// <returns>Array of SweepChannelData for each channel.</returns>
+    /// <returns>Array of SweepChannelData for 2 display channels (CH1, CH2).</returns>
     public SweepChannelData[] GetSweepData()
     {
         if (_disposed) return [];
@@ -318,15 +337,16 @@ public sealed class EegDataBridge : IDisposable
             if (!_hasData)
                 return [];
 
-            // Update cached result (reuse array to avoid GC pressure)
-            for (int ch = 0; ch < ChannelCount; ch++)
+            // Update cached result (reuse array to avoid GC pressure per CHARTER R-03)
+            for (int displayCh = 0; displayCh < 2; displayCh++)
             {
-                _cachedSweepData[ch] = new SweepChannelData
+                int physicalCh = _channelMapping[displayCh];
+                _cachedSweepData[displayCh] = new SweepChannelData
                 {
-                    ChannelIndex = ch,
-                    ChannelName = ChannelNames[ch],
-                    Samples = _channelBuffers[ch],
-                    Quality = _qualityBuffers[ch],
+                    ChannelIndex = displayCh,
+                    ChannelName = ChannelNames[physicalCh],
+                    Samples = _channelBuffers[physicalCh],
+                    Quality = _qualityBuffers[physicalCh],
                     SamplesPerSweep = _samplesPerSweep,
                     SampleRate = _sampleRate,
                     WriteIndex = _writeIndex,

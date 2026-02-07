@@ -39,6 +39,8 @@ public static class AuditEventTypes
     public const string MonitoringStop = "MONITORING_STOP";
     public const string FilterChange = "FILTER_CHANGE";
     public const string GainChange = "GAIN_CHANGE";
+    public const string LeadChange = "LEAD_CHANGE";
+    public const string ChannelMapChange = "CHANNEL_MAP_CHANGE";
     public const string Seek = "SEEK";
     public const string Annotation = "ANNOTATION";
     public const string Screenshot = "SCREENSHOT";

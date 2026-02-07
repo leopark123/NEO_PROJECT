@@ -67,7 +67,7 @@ public partial class NirsViewModel : ViewModelBase
     {
         for (int i = 1; i <= 6; i++)
         {
-            Channels.Add(new NirsChannelViewModel(i, i <= 3));
+            Channels.Add(new NirsChannelViewModel(i, i <= 4));
         }
     }
 

@@ -28,7 +28,15 @@
       "Bash(powershell \"Get-Process | Where-Object {$_.ProcessName -eq ''Neo.UI''}\")",
       "Bash(git add:*)",
       "Bash(git commit -m \"$\\(cat <<''EOF''\nComplete S3-00 NIRS integration with real-time UI data display\n\nImplemented complete NIRS \\(Near-Infrared Spectroscopy\\) integration for Nonin X-100M device:\n\nCore implementation:\n- NirsProtocolParser: ASCII text protocol with CRC-16 CCITT validation\n- Rs232NirsSource: Serial port data source \\(57600 baud, 1 Hz sampling\\)\n- MockNirsSource: Physiological waveform simulation for testing without hardware\n- NirsIntegrationShell: Quality flag mapping \\(ValidMask → QualityFlag\\)\n\nUI integration:\n- NirsPanelController: Event-driven data handling with Dispatcher thread sync\n- NirsViewModel: 6-channel state management \\(4 physical + 2 virtual\\)\n- Real-time percentage display updating every second\n- Fault detection and status indicators\n\nTesting:\n- 24 unit tests \\(basic + robustness\\)\n- Protocol parsing, CRC validation, concurrent access\n- Frame truncation, format errors, boundary conditions\n\nDocumentation:\n- 800+ line troubleshooting guide\n- ICD protocol specification \\(evidence/sources/icd/\\)\n- Implementation handoff documentation\n\nFixed critical data flow issue: App.xaml.cs now uses NirsWiring with MockNirsSource instead of empty NirsIntegrationShell, enabling real-time data updates in UI.\n\nCo-Authored-By: Claude Sonnet 4.5 <noreply@anthropic.com>\nEOF\n\\)\")",
-      "Bash(powershell \"Get-Process | Where-Object {$_ProcessName -eq ''Neo.UI''} | Select-Object ProcessName,Id,@{Name=''MemoryMB'';Expression={[math]::Round\\($_WorkingSet64/1MB,2\\)}},@{Name=''CPU'';Expression={$_CPU}},@{Name=''Threads'';Expression={$_Threads.Count}} | Format-Table -AutoSize\")"
+      "Bash(powershell \"Get-Process | Where-Object {$_ProcessName -eq ''Neo.UI''} | Select-Object ProcessName,Id,@{Name=''MemoryMB'';Expression={[math]::Round\\($_WorkingSet64/1MB,2\\)}},@{Name=''CPU'';Expression={$_CPU}},@{Name=''Threads'';Expression={$_Threads.Count}} | Format-Table -AutoSize\")",
+      "Bash(git commit:*)",
+      "Bash(git push)",
+      "Bash(git config:*)",
+      "Bash(ping:*)",
+      "Bash(curl:*)",
+      "Bash(unset:*)",
+      "Bash(git push:*)",
+      "Bash(cmd.exe /c \"taskkill /F /PID 8760\")"
     ]
   }
 }

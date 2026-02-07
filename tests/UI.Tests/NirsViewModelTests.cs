@@ -15,14 +15,14 @@ public class NirsViewModelTests
         Assert.True(vm.Channels[0].IsEnabled);
         Assert.True(vm.Channels[1].IsEnabled);
         Assert.True(vm.Channels[2].IsEnabled);
-        Assert.False(vm.Channels[3].IsEnabled);
+        Assert.True(vm.Channels[3].IsEnabled);   // CH4 now enabled by default
         Assert.False(vm.Channels[4].IsEnabled);
         Assert.False(vm.Channels[5].IsEnabled);
 
         Assert.Equal("--%", vm.Channels[0].StatusText);
         Assert.Equal("--%", vm.Channels[1].StatusText);
         Assert.Equal("--%", vm.Channels[2].StatusText);
-        Assert.Equal("Blocked", vm.Channels[3].StatusText);
+        Assert.Equal("--%", vm.Channels[3].StatusText);  // CH4 now enabled by default
         Assert.Equal("Blocked", vm.Channels[4].StatusText);
         Assert.Equal("Blocked", vm.Channels[5].StatusText);
     }
@@ -67,11 +67,12 @@ public class NirsViewModelTests
     {
         var vm = new NirsViewModel();
 
-        vm.SetChannelState(4, NirsChannelState.Fault);
-        Assert.Equal("Blocked", vm.Channels[3].StatusText);
+        // Use CH5 (index 4) which is disabled by default
+        vm.SetChannelState(5, NirsChannelState.Fault);
+        Assert.Equal("Blocked", vm.Channels[4].StatusText);
 
-        vm.Channels[3].IsEnabled = true;
-        Assert.Equal("Fault", vm.Channels[3].StatusText);
+        vm.Channels[4].IsEnabled = true;
+        Assert.Equal("Fault", vm.Channels[4].StatusText);
     }
 
     [Fact]

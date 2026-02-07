@@ -308,8 +308,8 @@ public sealed class WaveformRenderHost : IDisposable
                 // EEG Preview Ch1 (5%) - narrow strip with waveform
                 if (sweepData.Length >= 1)
                 {
-                    _eegPreviewRenderer.Render(_renderer.DeviceContext, _resourceCache,
-                        _layout.EegPreview1, _yAxisRangeUv, sweepData[0]);
+                    _sweepRenderer.RenderChannel(_renderer.DeviceContext, _resourceCache,
+                        sweepData[0], _layout.EegPreview1, _yAxisRangeUv, _gainMicrovoltsPerCm);
                 }
 
                 // aEEG Ch2 (25%)
@@ -319,8 +319,8 @@ public sealed class WaveformRenderHost : IDisposable
                 // EEG Preview Ch2 (5%) - narrow strip with waveform
                 if (sweepData.Length >= 2)
                 {
-                    _eegPreviewRenderer.Render(_renderer.DeviceContext, _resourceCache,
-                        _layout.EegPreview2, _yAxisRangeUv, sweepData[1]);
+                    _sweepRenderer.RenderChannel(_renderer.DeviceContext, _resourceCache,
+                        sweepData[1], _layout.EegPreview2, _yAxisRangeUv, _gainMicrovoltsPerCm);
                 }
 
                 // NIRS placeholder

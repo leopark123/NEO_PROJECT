@@ -116,6 +116,7 @@ public partial class WaveformPanel : UserControl
         _renderHost.YAxisRangeUv = vm.Waveform.SelectedYAxis;
         _renderHost.AeegVisibleHours = vm.Waveform.SelectedAeegHours;
         _renderHost.ShowGsHistogram = vm.Waveform.ShowGsHistogram;
+        ApplyLeadCombinationMapping(vm.Waveform.SelectedLeadCombination);
 
         vm.Waveform.PropertyChanged += OnWaveformPropertyChanged;
         vm.Toolbar.PropertyChanged += OnToolbarPropertyChanged;
@@ -156,7 +157,29 @@ public partial class WaveformPanel : UserControl
             case nameof(WaveformViewModel.ShowGsHistogram):
                 _renderHost.ShowGsHistogram = vm.ShowGsHistogram;
                 break;
+            case nameof(WaveformViewModel.SelectedLeadCombination):
+                ApplyLeadCombinationMapping(vm.SelectedLeadCombination);
+                break;
         }
+    }
+
+    private void ApplyLeadCombinationMapping(LeadCombinationOption? leadOption)
+    {
+        if (_renderHost == null || leadOption == null)
+        {
+            return;
+        }
+
+        // Hardware constraint (CONSENSUS_BASELINE.md §6.2):
+        // Physical CH1=C3-P3 (index 0), CH2=C4-P4 (index 1), CH3=P3-P4 (index 2), CH4=C3-C4 (index 3)
+        // Only C3-P3/C4-P4 combination is supported to prevent clinical mislabeling
+        var (ch1Physical, ch2Physical) = leadOption.Label switch
+        {
+            "C3-P3 / C4-P4" => (0, 1),  // Maps to physical CH1/CH2
+            _ => (0, 1)                  // Defensive fallback (should not occur after cleanup)
+        };
+
+        _renderHost.DataBridge.SetChannelMapping(ch1Physical, ch2Physical);
     }
 
     private void OnToolbarPropertyChanged(object? sender, PropertyChangedEventArgs e)

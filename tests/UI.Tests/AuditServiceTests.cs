@@ -36,11 +36,12 @@ public class AuditServiceTests
     {
         var audit = new AuditServiceAdapter();
 
-        // All 10 event types from UI_SPEC §10
+        // All 11 event types (10 from UI_SPEC §10 + LEAD_CHANGE added 2026-02-08)
         audit.Log(AuditEventTypes.MonitoringStart);
         audit.Log(AuditEventTypes.MonitoringStop);
         audit.Log(AuditEventTypes.FilterChange);
         audit.Log(AuditEventTypes.GainChange);
+        audit.Log(AuditEventTypes.LeadChange);
         audit.Log(AuditEventTypes.Seek);
         audit.Log(AuditEventTypes.Annotation);
         audit.Log(AuditEventTypes.Screenshot);
@@ -49,7 +50,7 @@ public class AuditServiceTests
         audit.Log(AuditEventTypes.DeviceDisconnect);
 
         var events = audit.GetRecentEvents(20);
-        Assert.Equal(10, events.Count);
+        Assert.Equal(11, events.Count);
     }
 
     [Fact]
@@ -116,13 +117,14 @@ public class AuditServiceTests
     }
 
     [Fact]
-    public void AuditEventTypes_Contains10Types()
+    public void AuditEventTypes_ContainsAllDefinedTypes()
     {
-        // Verify all UI_SPEC §10 event types exist (exactly 10, no more)
+        // Verify all defined event types (10 from UI_SPEC §10 + LEAD_CHANGE added 2026-02-08)
         Assert.Equal("MONITORING_START", AuditEventTypes.MonitoringStart);
         Assert.Equal("MONITORING_STOP", AuditEventTypes.MonitoringStop);
         Assert.Equal("FILTER_CHANGE", AuditEventTypes.FilterChange);
         Assert.Equal("GAIN_CHANGE", AuditEventTypes.GainChange);
+        Assert.Equal("LEAD_CHANGE", AuditEventTypes.LeadChange);
         Assert.Equal("SEEK", AuditEventTypes.Seek);
         Assert.Equal("ANNOTATION", AuditEventTypes.Annotation);
         Assert.Equal("SCREENSHOT", AuditEventTypes.Screenshot);

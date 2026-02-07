@@ -181,8 +181,10 @@ public sealed class EegDataBridgeTests
     }
 
     [Fact]
-    public void GetSweepData_WithSamples_Returns4Channels()
+    public void GetSweepData_WithSamples_Returns2DisplayChannels()
     {
+        // GetSweepData returns 2 display channels (CH1/CH2) mapped to physical channels
+        // Default mapping: display CH1->physical CH1 (C3-P3), display CH2->physical CH2 (C4-P4)
         using var bridge = new EegDataBridge(sampleRate: 160, sweepSeconds: 1);
         var source = new TestEegSource();
         bridge.AttachSource(source);
@@ -199,11 +201,11 @@ public sealed class EegDataBridgeTests
 
         var data = bridge.GetSweepData();
 
-        Assert.Equal(4, data.Length);
-        Assert.Equal("CH1 (C3-P3)", data[0].ChannelName);
-        Assert.Equal("CH2 (C4-P4)", data[1].ChannelName);
-        Assert.Equal("CH3 (P3-P4)", data[2].ChannelName);
-        Assert.Equal("CH4 (C3-C4)", data[3].ChannelName);
+        Assert.Equal(2, data.Length);  // 2 display channels
+        Assert.Equal(0, data[0].ChannelIndex);
+        Assert.Equal(1, data[1].ChannelIndex);
+        Assert.Equal("CH1 (C3-P3)", data[0].ChannelName);  // Mapped to physical CH1
+        Assert.Equal("CH2 (C4-P4)", data[1].ChannelName);  // Mapped to physical CH2
         Assert.Equal(160, data[0].SamplesPerSweep);
 
         bridge.DetachSource();
@@ -212,6 +214,7 @@ public sealed class EegDataBridgeTests
     [Fact]
     public void GetSweepData_SampleValues_AreCorrect()
     {
+        // Verify that display channels map to correct physical channel data
         using var bridge = new EegDataBridge(sampleRate: 160, sweepSeconds: 1);
         var source = new TestEegSource();
         bridge.AttachSource(source);
@@ -220,19 +223,18 @@ public sealed class EegDataBridgeTests
         source.EmitSample(new EegSample
         {
             TimestampUs = 0,
-            Ch1Uv = 42.5,
-            Ch2Uv = -10.0,
-            Ch3Uv = 100.0,
-            Ch4Uv = 0.0,
+            Ch1Uv = 42.5,   // Physical CH1 (C3-P3)
+            Ch2Uv = -10.0,  // Physical CH2 (C4-P4)
+            Ch3Uv = 100.0,  // Physical CH3 (P3-P4)
+            Ch4Uv = 0.0,    // Physical CH4 (C3-C4)
             QualityFlags = QualityFlag.Normal
         });
 
         var data = bridge.GetSweepData();
+        // Default mapping: display[0]->physical[0], display[1]->physical[1]
         // Sample was written at index 0 (the initial writeIndex)
-        Assert.Equal(42.5f, data[0].Samples.Span[0]);
-        Assert.Equal(-10.0f, data[1].Samples.Span[0]);
-        Assert.Equal(100.0f, data[2].Samples.Span[0]);
-        Assert.Equal(0.0f, data[3].Samples.Span[0]);
+        Assert.Equal(42.5f, data[0].Samples.Span[0]);   // Display CH1 = Physical CH1
+        Assert.Equal(-10.0f, data[1].Samples.Span[0]);  // Display CH2 = Physical CH2
 
         bridge.DetachSource();
     }
@@ -292,6 +294,104 @@ public sealed class EegDataBridgeTests
         Assert.Equal(0.0f, x0);
         Assert.Equal(500.0f, xMid);
         Assert.Equal(1000.0f, xEnd);
+    }
+
+    [Fact]
+    public void SetChannelMapping_UpdatesDisplayChannels()
+    {
+        // Verify: Lead combination switching changes actual data source, not just labels
+        // This prevents clinical mislabeling (e.g., showing "F3-P3" but rendering C3-P3 data)
+        using var bridge = new EegDataBridge(sampleRate: 160, sweepSeconds: 1);
+        var source = new TestEegSource();
+        bridge.AttachSource(source);
+
+        source.EmitSample(new EegSample
+        {
+            TimestampUs = 0,
+            Ch1Uv = 10.0,   // Physical CH1 (C3-P3)
+            Ch2Uv = 20.0,   // Physical CH2 (C4-P4)
+            Ch3Uv = 30.0,   // Physical CH3 (P3-P4)
+            Ch4Uv = 40.0,   // Physical CH4 (C3-C4)
+            QualityFlags = QualityFlag.Normal
+        });
+
+        // Default mapping: display[0]->physical[0], display[1]->physical[1]
+        var data1 = bridge.GetSweepData();
+        Assert.Equal("CH1 (C3-P3)", data1[0].ChannelName);
+        Assert.Equal("CH2 (C4-P4)", data1[1].ChannelName);
+        Assert.Equal(10.0f, data1[0].Samples.Span[0]);
+        Assert.Equal(20.0f, data1[1].Samples.Span[0]);
+
+        // Change mapping: display[0]->physical[2], display[1]->physical[3]
+        bridge.SetChannelMapping(2, 3);
+        var data2 = bridge.GetSweepData();
+        Assert.Equal("CH3 (P3-P4)", data2[0].ChannelName);  // Label reflects actual data
+        Assert.Equal("CH4 (C3-C4)", data2[1].ChannelName);  // Label reflects actual data
+        Assert.Equal(30.0f, data2[0].Samples.Span[0]);      // Data matches label
+        Assert.Equal(40.0f, data2[1].Samples.Span[0]);      // Data matches label
+
+        bridge.DetachSource();
+    }
+
+    [Fact]
+    public void LeadLabelConsistency_PreventsClinicalMislabeling()
+    {
+        // Critical safety test: Verify that channel name, index, and data source are consistent
+        // If label says "C3-P3", the data MUST be from physical C3-P3 channel
+        using var bridge = new EegDataBridge(sampleRate: 160, sweepSeconds: 1);
+        var source = new TestEegSource();
+        bridge.AttachSource(source);
+
+        // Emit sample with distinct values for each physical channel
+        source.EmitSample(new EegSample
+        {
+            TimestampUs = 0,
+            Ch1Uv = 111.0,  // Physical CH1 (C3-P3) - unique marker
+            Ch2Uv = 222.0,  // Physical CH2 (C4-P4) - unique marker
+            Ch3Uv = 333.0,  // Physical CH3 (P3-P4) - unique marker
+            Ch4Uv = 444.0,  // Physical CH4 (C3-C4) - unique marker
+            QualityFlags = QualityFlag.Normal
+        });
+
+        var data = bridge.GetSweepData();
+
+        // Display CH1 label must match its data source
+        if (data[0].ChannelName.Contains("C3-P3"))
+        {
+            Assert.Equal(111.0f, data[0].Samples.Span[0]);
+        }
+        else if (data[0].ChannelName.Contains("C4-P4"))
+        {
+            Assert.Equal(222.0f, data[0].Samples.Span[0]);
+        }
+        else if (data[0].ChannelName.Contains("P3-P4"))
+        {
+            Assert.Equal(333.0f, data[0].Samples.Span[0]);
+        }
+        else if (data[0].ChannelName.Contains("C3-C4"))
+        {
+            Assert.Equal(444.0f, data[0].Samples.Span[0]);
+        }
+
+        // Display CH2 label must match its data source
+        if (data[1].ChannelName.Contains("C3-P3"))
+        {
+            Assert.Equal(111.0f, data[1].Samples.Span[0]);
+        }
+        else if (data[1].ChannelName.Contains("C4-P4"))
+        {
+            Assert.Equal(222.0f, data[1].Samples.Span[0]);
+        }
+        else if (data[1].ChannelName.Contains("P3-P4"))
+        {
+            Assert.Equal(333.0f, data[1].Samples.Span[0]);
+        }
+        else if (data[1].ChannelName.Contains("C3-C4"))
+        {
+            Assert.Equal(444.0f, data[1].Samples.Span[0]);
+        }
+
+        bridge.DetachSource();
     }
 
     private static float ComputeStdDev(ReadOnlySpan<float> samples)

@@ -6,16 +6,35 @@ namespace Neo.UI.ViewModels;
 
 public sealed record LeadCombinationOption(string Label, string Ch1, string Ch2);
 
+/// <summary>
+/// Represents a selectable EEG channel source option.
+/// </summary>
+/// <param name="Label">Display label (e.g., "CH1 (C3-P3)")</param>
+/// <param name="PhysicalChannel">Physical channel index (0-3)</param>
+public sealed record ChannelSourceOption(string Label, int PhysicalChannel);
+
 public partial class WaveformViewModel : ViewModelBase
 {
     private readonly IAuditService _audit;
     private readonly IThemeService _themeService;
 
+    // Hardware-supported lead combinations only (CONSENSUS_BASELINE.md §6.2)
+    // Hardware provides: CH1=C3-P3, CH2=C4-P4, CH3=P3-P4, CH4=C3-C4
+    // Only C3-P3/C4-P4 combination is directly supported without remapping
     public static IReadOnlyList<LeadCombinationOption> LeadCombinationOptions { get; } =
     [
-        new("C3-P3 / C4-P4", "C3-P3", "C4-P4"),
-        new("F3-P3 / F4-P4", "F3-P3", "F4-P4"),
-        new("C3-O1 / C4-O2", "C3-O1", "C4-O2")
+        new("C3-P3 / C4-P4", "C3-P3", "C4-P4")  // Maps to physical CH1/CH2
+    ];
+
+    /// <summary>
+    /// Available channel source options for per-EEG lane configuration.
+    /// Protocol facts: CH1=C3-P3 (A-B), CH2=C4-P4 (C-D), CH4=C3-C4 (A-D, cross-channel/computed)
+    /// </summary>
+    public static IReadOnlyList<ChannelSourceOption> SourceOptions { get; } =
+    [
+        new("CH1 (C3-P3)", 0),              // Physical channel 0
+        new("CH2 (C4-P4)", 1),              // Physical channel 1
+        new("CH4 (C3-C4, 跨导联)", 3)      // Physical channel 3, computed/cross-channel
     ];
 
     public static int[] GainOptions { get; } = [10, 20, 50, 70, 100, 200, 1000];
@@ -58,6 +77,27 @@ public partial class WaveformViewModel : ViewModelBase
     [ObservableProperty]
     private bool _showGsHistogram = false; // Default: hidden
 
+    // Per-EEG lane configuration (new model, replaces global SelectedGain/SelectedYAxis)
+    // EEG-1 (top display lane)
+    [ObservableProperty]
+    private ChannelSourceOption? _eeg1Source;
+
+    [ObservableProperty]
+    private int _eeg1Gain = 100;  // μV/cm
+
+    [ObservableProperty]
+    private int _eeg1Range = 100; // ±μV
+
+    // EEG-2 (bottom display lane)
+    [ObservableProperty]
+    private ChannelSourceOption? _eeg2Source;
+
+    [ObservableProperty]
+    private int _eeg2Gain = 100;  // μV/cm
+
+    [ObservableProperty]
+    private int _eeg2Range = 100; // ±μV
+
     public string GainDisplay => $"{SelectedGain} uV/cm";
     public string YAxisDisplay => $"+/-{SelectedYAxis} uV";
     public string HpfDisplay => $"HPF: {SelectedHpf:0.0} Hz";
@@ -71,6 +111,12 @@ public partial class WaveformViewModel : ViewModelBase
         _audit = audit;
         _themeService = themeService;
         SelectedLeadCombination = LeadCombinationOptions[0];
+
+        // Initialize per-lane defaults
+        // EEG-1: CH1 (C3-P3), gain=100, range=100
+        // EEG-2: CH2 (C4-P4), gain=100, range=100
+        Eeg1Source = SourceOptions[0];  // CH1
+        Eeg2Source = SourceOptions[1];  // CH2
     }
 
     /// <summary>
@@ -78,15 +124,21 @@ public partial class WaveformViewModel : ViewModelBase
     /// </summary>
     public IThemeService ThemeService => _themeService;
 
-    partial void OnSelectedLeadCombinationChanged(LeadCombinationOption? value)
+    partial void OnSelectedLeadCombinationChanged(LeadCombinationOption? oldValue, LeadCombinationOption? newValue)
     {
-        if (value is null)
+        if (newValue is null)
         {
             return;
         }
 
-        LeadCh1 = $"CH1: {value.Ch1}";
-        LeadCh2 = $"CH2: {value.Ch2}";
+        LeadCh1 = $"CH1: {newValue.Ch1}";
+        LeadCh2 = $"CH2: {newValue.Ch2}";
+
+        // Audit lead combination change (matches GainChange audit pattern)
+        if (oldValue != null && oldValue.Label != newValue.Label)
+        {
+            _audit.Log(AuditEventTypes.LeadChange, $"{oldValue.Label} -> {newValue.Label}");
+        }
     }
 
     partial void OnSelectedGainChanged(int oldValue, int newValue)

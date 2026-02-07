@@ -19,7 +19,7 @@ public class NirsPanelControllerTests
         Assert.Equal("--%", vm.Channels[0].StatusText);
         Assert.Equal("--%", vm.Channels[1].StatusText);
         Assert.Equal("--%", vm.Channels[2].StatusText);
-        Assert.Equal("Blocked", vm.Channels[3].StatusText);
+        Assert.Equal("--%", vm.Channels[3].StatusText);  // CH4 now enabled by default
         Assert.Equal("Blocked", vm.Channels[4].StatusText);
         Assert.Equal("Blocked", vm.Channels[5].StatusText);
     }
@@ -36,7 +36,7 @@ public class NirsPanelControllerTests
         Assert.Matches(@"^\d+%$|^Fault$|^--%$", vm.Channels[0].StatusText);
         Assert.Matches(@"^\d+%$|^Fault$|^--%$", vm.Channels[1].StatusText);
         Assert.Matches(@"^\d+%$|^Fault$|^--%$", vm.Channels[2].StatusText);
-        Assert.Equal("Blocked", vm.Channels[3].StatusText);
+        Assert.Matches(@"^\d+%$|^Fault$|^--%$", vm.Channels[3].StatusText);  // CH4 now enabled
     }
 
     [Fact]

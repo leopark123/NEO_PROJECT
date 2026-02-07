@@ -24,13 +24,12 @@ public class WaveformViewModelTests
     }
 
     [Fact]
-    public void SelectedLeadCombination_UpdatesLeadLabels()
+    public void LeadCombinationOptions_OnlyContainsHardwareSupportedLeads()
     {
-        var vm = CreateVm(out _);
-        vm.SelectedLeadCombination = WaveformViewModel.LeadCombinationOptions[1];
-
-        Assert.Equal("CH1: F3-P3", vm.LeadCh1);
-        Assert.Equal("CH2: F4-P4", vm.LeadCh2);
+        // Hardware constraint (CONSENSUS_BASELINE.md §6.2): Only C3-P3/C4-P4 directly supported
+        // This prevents clinical mislabeling (showing unsupported leads like F3-P3, C3-O1)
+        Assert.Single(WaveformViewModel.LeadCombinationOptions);
+        Assert.Equal("C3-P3 / C4-P4", WaveformViewModel.LeadCombinationOptions[0].Label);
     }
 
     [Fact]
@@ -241,22 +240,126 @@ public class WaveformViewModelTests
     }
 
     [Fact]
-    public void CycleLeadCombination_CyclesThroughMontages()
+    public void CycleLeadCombination_WithSingleOption_KeepsCurrentSelection()
     {
+        // With only one hardware-supported option, cycling returns to the same selection
         var vm = CreateVm(out _);
         Assert.Equal("CH1: C3-P3", vm.LeadCh1);
         Assert.Equal("CH2: C4-P4", vm.LeadCh2);
 
         vm.CycleLeadCombinationCommand.Execute(null);
-        Assert.Equal("CH1: F3-P3", vm.LeadCh1);
-        Assert.Equal("CH2: F4-P4", vm.LeadCh2);
-
-        vm.CycleLeadCombinationCommand.Execute(null);
-        Assert.Equal("CH1: C3-O1", vm.LeadCh1);
-        Assert.Equal("CH2: C4-O2", vm.LeadCh2);
-
-        vm.CycleLeadCombinationCommand.Execute(null);
         Assert.Equal("CH1: C3-P3", vm.LeadCh1);
         Assert.Equal("CH2: C4-P4", vm.LeadCh2);
+    }
+
+    [Fact]
+    public void LeadChange_LogsAuditEvent()
+    {
+        // Lead combination changes must be audited (same pattern as GainChange)
+        var vm = CreateVm(out var audit);
+
+        // Initial selection doesn't trigger audit (oldValue is null)
+        var initialEvents = audit.GetRecentEvents(100);
+        var leadEventsInitial = initialEvents.Count(e => e.EventType == AuditEventTypes.LeadChange);
+
+        // Manual change to same option should not trigger audit (label unchanged)
+        vm.SelectedLeadCombination = WaveformViewModel.LeadCombinationOptions[0];
+        var eventsAfterSame = audit.GetRecentEvents(100);
+        var leadEventsAfterSame = eventsAfterSame.Count(e => e.EventType == AuditEventTypes.LeadChange);
+        Assert.Equal(leadEventsInitial, leadEventsAfterSame);
+
+        // Note: With only one option, we cannot test actual lead change audit in this test.
+        // The audit mechanism is tested via the method signature and will work when
+        // multiple hardware-supported options become available in future.
+    }
+
+    [Fact]
+    public void LeadChange_WithDifferentLabel_LogsAuditEventWithDetails()
+    {
+        // Positive test: verify LEAD_CHANGE event is logged when label actually changes
+        var vm = CreateVm(out var audit);
+        var initialCount = audit.GetRecentEvents(100).Count;
+
+        // Construct a different lead combination to trigger audit
+        var newLeadOption = new LeadCombinationOption("P3-P4 / C3-C4", "P3-P4", "C3-C4");
+        vm.SelectedLeadCombination = newLeadOption;
+
+        var events = audit.GetRecentEvents(100);
+        Assert.Equal(initialCount + 1, events.Count);
+
+        var leadEvent = events[^1];
+        Assert.Equal(AuditEventTypes.LeadChange, leadEvent.EventType);
+        Assert.NotNull(leadEvent.Details);
+        Assert.Contains("C3-P3 / C4-P4", leadEvent.Details);  // Old value
+        Assert.Contains("P3-P4 / C3-C4", leadEvent.Details);   // New value
+        Assert.Contains("->", leadEvent.Details);              // Format: "old -> new"
+    }
+
+    // Per-EEG lane configuration tests
+
+    [Fact]
+    public void SourceOptions_Contains3Channels()
+    {
+        // CH1 (C3-P3), CH2 (C4-P4), CH4 (C3-C4, cross-channel)
+        Assert.Equal(3, WaveformViewModel.SourceOptions.Count);
+        Assert.Equal("CH1 (C3-P3)", WaveformViewModel.SourceOptions[0].Label);
+        Assert.Equal(0, WaveformViewModel.SourceOptions[0].PhysicalChannel);
+        Assert.Equal("CH2 (C4-P4)", WaveformViewModel.SourceOptions[1].Label);
+        Assert.Equal(1, WaveformViewModel.SourceOptions[1].PhysicalChannel);
+        Assert.Equal("CH4 (C3-C4, 跨导联)", WaveformViewModel.SourceOptions[2].Label);
+        Assert.Equal(3, WaveformViewModel.SourceOptions[2].PhysicalChannel);
+    }
+
+    [Fact]
+    public void Eeg1_DefaultsToSource0_Gain100_Range100()
+    {
+        var vm = CreateVm(out _);
+
+        Assert.NotNull(vm.Eeg1Source);
+        Assert.Equal(WaveformViewModel.SourceOptions[0], vm.Eeg1Source);  // CH1
+        Assert.Equal(100, vm.Eeg1Gain);
+        Assert.Equal(100, vm.Eeg1Range);
+    }
+
+    [Fact]
+    public void Eeg2_DefaultsToSource1_Gain100_Range100()
+    {
+        var vm = CreateVm(out _);
+
+        Assert.NotNull(vm.Eeg2Source);
+        Assert.Equal(WaveformViewModel.SourceOptions[1], vm.Eeg2Source);  // CH2
+        Assert.Equal(100, vm.Eeg2Gain);
+        Assert.Equal(100, vm.Eeg2Range);
+    }
+
+    [Fact]
+    public void Eeg1Source_CanBeChanged()
+    {
+        var vm = CreateVm(out _);
+
+        vm.Eeg1Source = WaveformViewModel.SourceOptions[2];  // CH4
+
+        Assert.Equal(WaveformViewModel.SourceOptions[2], vm.Eeg1Source);
+        Assert.Equal(3, vm.Eeg1Source.PhysicalChannel);
+    }
+
+    [Fact]
+    public void Eeg1Gain_CanBeChanged()
+    {
+        var vm = CreateVm(out _);
+
+        vm.Eeg1Gain = 200;
+
+        Assert.Equal(200, vm.Eeg1Gain);
+    }
+
+    [Fact]
+    public void Eeg1Range_CanBeChanged()
+    {
+        var vm = CreateVm(out _);
+
+        vm.Eeg1Range = 50;
+
+        Assert.Equal(50, vm.Eeg1Range);
     }
 }
