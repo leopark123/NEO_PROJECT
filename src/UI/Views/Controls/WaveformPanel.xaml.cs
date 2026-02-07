@@ -113,9 +113,17 @@ public partial class WaveformPanel : UserControl
             return;
         }
 
-        // Legacy global properties (will be deprecated in Commit 4)
+        // Per-lane gain/range configuration (Commit 4)
+        _renderHost.Lane0GainMicrovoltsPerCm = vm.Waveform.Eeg1Gain;
+        _renderHost.Lane1GainMicrovoltsPerCm = vm.Waveform.Eeg2Gain;
+        _renderHost.Lane0YAxisRangeUv = vm.Waveform.Eeg1Range;
+        _renderHost.Lane1YAxisRangeUv = vm.Waveform.Eeg2Range;
+
+        // Legacy global properties (kept for backward compatibility)
+#pragma warning disable CS0618 // Using obsolete property for backward compatibility
         _renderHost.GainMicrovoltsPerCm = vm.Waveform.SelectedGain;
         _renderHost.YAxisRangeUv = vm.Waveform.SelectedYAxis;
+#pragma warning restore CS0618
         _renderHost.AeegVisibleHours = vm.Waveform.SelectedAeegHours;
         _renderHost.ShowGsHistogram = vm.Waveform.ShowGsHistogram;
 
@@ -154,10 +162,14 @@ public partial class WaveformPanel : UserControl
         {
             // Legacy global properties (deprecated, but kept for transition)
             case nameof(WaveformViewModel.SelectedGain):
+#pragma warning disable CS0618 // Using obsolete property for backward compatibility
                 _renderHost.GainMicrovoltsPerCm = vm.SelectedGain;
+#pragma warning restore CS0618
                 break;
             case nameof(WaveformViewModel.SelectedYAxis):
+#pragma warning disable CS0618
                 _renderHost.YAxisRangeUv = vm.SelectedYAxis;
+#pragma warning restore CS0618
                 break;
             case nameof(WaveformViewModel.SelectedAeegHours):
                 _renderHost.AeegVisibleHours = vm.SelectedAeegHours;
@@ -176,18 +188,30 @@ public partial class WaveformPanel : UserControl
                 LogChannelMapChange(vm.Eeg1Source, vm.Eeg2Source);
                 break;
 
-            // Per-lane gain/range (temporarily set global properties until Commit 4)
+            // Per-lane gain/range (Commit 4: RenderHost now supports per-lane configuration)
             case nameof(WaveformViewModel.Eeg1Gain):
+#pragma warning disable CS0618 // Using obsolete property for backward compatibility
+                _renderHost.Lane0GainMicrovoltsPerCm = vm.Eeg1Gain;
+                _renderHost.GainMicrovoltsPerCm = vm.Eeg1Gain; // Also update legacy property
+#pragma warning restore CS0618
+                break;
             case nameof(WaveformViewModel.Eeg2Gain):
-                // TODO (Commit 4): Set per-lane gain once RenderHost supports it
-                // For now, use EEG-1 gain as the global fallback
-                _renderHost.GainMicrovoltsPerCm = vm.Eeg1Gain;
+#pragma warning disable CS0618
+                _renderHost.Lane1GainMicrovoltsPerCm = vm.Eeg2Gain;
+                _renderHost.GainMicrovoltsPerCm = vm.Eeg2Gain; // Also update legacy property
+#pragma warning restore CS0618
                 break;
             case nameof(WaveformViewModel.Eeg1Range):
+#pragma warning disable CS0618
+                _renderHost.Lane0YAxisRangeUv = vm.Eeg1Range;
+                _renderHost.YAxisRangeUv = vm.Eeg1Range; // Also update legacy property
+#pragma warning restore CS0618
+                break;
             case nameof(WaveformViewModel.Eeg2Range):
-                // TODO (Commit 4): Set per-lane range once RenderHost supports it
-                // For now, use EEG-1 range as the global fallback
-                _renderHost.YAxisRangeUv = vm.Eeg1Range;
+#pragma warning disable CS0618
+                _renderHost.Lane1YAxisRangeUv = vm.Eeg2Range;
+                _renderHost.YAxisRangeUv = vm.Eeg2Range; // Also update legacy property
+#pragma warning restore CS0618
                 break;
         }
     }

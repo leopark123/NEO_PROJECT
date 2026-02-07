@@ -76,10 +76,19 @@ public sealed class WaveformRenderHost : IDisposable
     private long _playbackStartUs = 0;
     private long _playbackEndUs = 24L * 60 * 60 * 1_000_000; // 24 hours mock range
 
-    // Gain setting (μV/cm) — default 100 per WaveformViewModel
+    // Per-lane gain settings (μV/cm) — default 100 per WaveformViewModel
+    private int _lane0GainMicrovoltsPerCm = 100;  // EEG-1 (top lane)
+    private int _lane1GainMicrovoltsPerCm = 100;  // EEG-2 (bottom lane)
+
+    // Per-lane Y-axis range (±μV) — default 100 per spec
+    private int _lane0YAxisRangeUv = 100;  // EEG-1 (top lane)
+    private int _lane1YAxisRangeUv = 100;  // EEG-2 (bottom lane)
+
+    // Legacy global properties (deprecated, kept for backward compatibility)
+    [Obsolete("Use Lane0GainMicrovoltsPerCm and Lane1GainMicrovoltsPerCm instead")]
     private int _gainMicrovoltsPerCm = 100;
 
-    // Y-axis range (±μV) — default 100 per spec
+    [Obsolete("Use Lane0YAxisRangeUv and Lane1YAxisRangeUv instead")]
     private int _yAxisRangeUv = 100;
 
     // Time tracking (microseconds)
@@ -128,18 +137,66 @@ public sealed class WaveformRenderHost : IDisposable
     /// <summary>EEG data bridge for connecting data sources.</summary>
     public EegDataBridge DataBridge => _dataBridge;
 
-    /// <summary>Gain setting in μV/cm (10-1000).</summary>
+    /// <summary>Lane 0 (EEG-1, top) gain setting in μV/cm (10-1000).</summary>
+    public int Lane0GainMicrovoltsPerCm
+    {
+        get => _lane0GainMicrovoltsPerCm;
+        set => _lane0GainMicrovoltsPerCm = Math.Clamp(value, 10, 1000);
+    }
+
+    /// <summary>Lane 1 (EEG-2, bottom) gain setting in μV/cm (10-1000).</summary>
+    public int Lane1GainMicrovoltsPerCm
+    {
+        get => _lane1GainMicrovoltsPerCm;
+        set => _lane1GainMicrovoltsPerCm = Math.Clamp(value, 10, 1000);
+    }
+
+    /// <summary>Lane 0 (EEG-1, top) Y-axis display range in ±μV (25-200).</summary>
+    public int Lane0YAxisRangeUv
+    {
+        get => _lane0YAxisRangeUv;
+        set => _lane0YAxisRangeUv = Math.Clamp(value, 25, 200);
+    }
+
+    /// <summary>Lane 1 (EEG-2, bottom) Y-axis display range in ±μV (25-200).</summary>
+    public int Lane1YAxisRangeUv
+    {
+        get => _lane1YAxisRangeUv;
+        set => _lane1YAxisRangeUv = Math.Clamp(value, 25, 200);
+    }
+
+    /// <summary>
+    /// [DEPRECATED] Global gain setting in μV/cm (10-1000).
+    /// Use Lane0GainMicrovoltsPerCm and Lane1GainMicrovoltsPerCm instead.
+    /// Setting this property updates both lanes for backward compatibility.
+    /// </summary>
+    [Obsolete("Use Lane0GainMicrovoltsPerCm and Lane1GainMicrovoltsPerCm instead")]
     public int GainMicrovoltsPerCm
     {
         get => _gainMicrovoltsPerCm;
-        set => _gainMicrovoltsPerCm = Math.Clamp(value, 10, 1000);
+        set
+        {
+            _gainMicrovoltsPerCm = Math.Clamp(value, 10, 1000);
+            _lane0GainMicrovoltsPerCm = _gainMicrovoltsPerCm;
+            _lane1GainMicrovoltsPerCm = _gainMicrovoltsPerCm;
+        }
     }
 
-    /// <summary>Y-axis display range in ±μV (25-200).</summary>
+    /// <summary>
+    /// [DEPRECATED] Global Y-axis display range in ±μV (25-200).
+    /// Use Lane0YAxisRangeUv and Lane1YAxisRangeUv instead.
+    /// Setting this property updates both lanes for backward compatibility.
+    /// </summary>
+    [Obsolete("Use Lane0YAxisRangeUv and Lane1YAxisRangeUv instead")]
     public int YAxisRangeUv
     {
         get => _yAxisRangeUv;
-        set => _yAxisRangeUv = Math.Clamp(value, 25, 200);
+        set
+        {
+            _yAxisRangeUv = Math.Clamp(value, 25, 200);
+            _lane0YAxisRangeUv = _yAxisRangeUv;
+            _lane1YAxisRangeUv = _yAxisRangeUv;
+        }
     }
 
     /// <summary>aEEG visible duration in hours (1-24).</summary>
@@ -305,22 +362,22 @@ public sealed class WaveformRenderHost : IDisposable
                 RenderAeeg(_renderer.DeviceContext, _layout.Aeeg1,
                     _aeegCh1Ready ? _aeegCh1RenderData : null, _gsBinsCh1);
 
-                // EEG Preview Ch1 (5%) - narrow strip with waveform
+                // EEG Preview Ch1 (5%) - narrow strip with waveform (Lane 0 / EEG-1)
                 if (sweepData.Length >= 1)
                 {
                     _sweepRenderer.RenderChannel(_renderer.DeviceContext, _resourceCache,
-                        sweepData[0], _layout.EegPreview1, _yAxisRangeUv, _gainMicrovoltsPerCm);
+                        sweepData[0], _layout.EegPreview1, _lane0YAxisRangeUv, _lane0GainMicrovoltsPerCm);
                 }
 
                 // aEEG Ch2 (25%)
                 RenderAeeg(_renderer.DeviceContext, _layout.Aeeg2,
                     _aeegCh2Ready ? _aeegCh2RenderData : null, _gsBinsCh2);
 
-                // EEG Preview Ch2 (5%) - narrow strip with waveform
+                // EEG Preview Ch2 (5%) - narrow strip with waveform (Lane 1 / EEG-2)
                 if (sweepData.Length >= 2)
                 {
                     _sweepRenderer.RenderChannel(_renderer.DeviceContext, _resourceCache,
-                        sweepData[1], _layout.EegPreview2, _yAxisRangeUv, _gainMicrovoltsPerCm);
+                        sweepData[1], _layout.EegPreview2, _lane1YAxisRangeUv, _lane1GainMicrovoltsPerCm);
                 }
 
                 // NIRS placeholder

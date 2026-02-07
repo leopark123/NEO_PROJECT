@@ -217,7 +217,9 @@ public sealed class WaveformRenderHostTests
         using var host = new WaveformRenderHost();
 
         // Assert
+#pragma warning disable CS0618 // Testing legacy property for backward compatibility
         Assert.Equal(100, host.GainMicrovoltsPerCm);
+#pragma warning restore CS0618
     }
 
     [Fact]
@@ -227,10 +229,12 @@ public sealed class WaveformRenderHostTests
         using var host = new WaveformRenderHost();
 
         // Act
+#pragma warning disable CS0618 // Testing legacy property for backward compatibility
         host.GainMicrovoltsPerCm = 5;
 
         // Assert
         Assert.Equal(10, host.GainMicrovoltsPerCm);
+#pragma warning restore CS0618
     }
 
     [Fact]
@@ -240,10 +244,12 @@ public sealed class WaveformRenderHostTests
         using var host = new WaveformRenderHost();
 
         // Act
+#pragma warning disable CS0618 // Testing legacy property for backward compatibility
         host.GainMicrovoltsPerCm = 2000;
 
         // Assert
         Assert.Equal(1000, host.GainMicrovoltsPerCm);
+#pragma warning restore CS0618
     }
 
     [Fact]
@@ -253,7 +259,9 @@ public sealed class WaveformRenderHostTests
         using var host = new WaveformRenderHost();
 
         // Assert
+#pragma warning disable CS0618 // Testing legacy property for backward compatibility
         Assert.Equal(100, host.YAxisRangeUv);
+#pragma warning restore CS0618
     }
 
     [Fact]
@@ -263,10 +271,12 @@ public sealed class WaveformRenderHostTests
         using var host = new WaveformRenderHost();
 
         // Act
+#pragma warning disable CS0618 // Testing legacy property for backward compatibility
         host.YAxisRangeUv = 10;
 
         // Assert
         Assert.Equal(25, host.YAxisRangeUv);
+#pragma warning restore CS0618
     }
 
     [Fact]
@@ -276,10 +286,12 @@ public sealed class WaveformRenderHostTests
         using var host = new WaveformRenderHost();
 
         // Act
+#pragma warning disable CS0618 // Testing legacy property for backward compatibility
         host.YAxisRangeUv = 500;
 
         // Assert
         Assert.Equal(200, host.YAxisRangeUv);
+#pragma warning restore CS0618
     }
 
     [Fact]
