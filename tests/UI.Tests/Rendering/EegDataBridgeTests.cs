@@ -394,6 +394,137 @@ public sealed class EegDataBridgeTests
         bridge.DetachSource();
     }
 
+    // Commit 5: Per-EEG source mapping consistency tests
+    // These tests verify Source 0 (CH1), 1 (CH2), 3 (CH4) → mapping → data consistency
+
+    [Fact]
+    public void SourceMapping_Lane0ToPhysical0_Lane1ToPhysical1_DefaultMapping()
+    {
+        // Test default mapping: EEG-1 → CH1 (physical 0), EEG-2 → CH2 (physical 1)
+        using var bridge = new EegDataBridge(sampleRate: 160, sweepSeconds: 1);
+        var source = new TestEegSource();
+        bridge.AttachSource(source);
+
+        // Default mapping is already 0,1 so no SetChannelMapping needed
+        bridge.SetChannelMapping(0, 1);
+
+        source.EmitSample(new EegSample
+        {
+            TimestampUs = 0,
+            Ch1Uv = 10.0,   // Physical CH1 (source 0)
+            Ch2Uv = 20.0,   // Physical CH2 (source 1)
+            Ch3Uv = 30.0,   // Physical CH3 (source 2)
+            Ch4Uv = 40.0,   // Physical CH4 (source 3)
+            QualityFlags = QualityFlag.Normal
+        });
+
+        var data = bridge.GetSweepData();
+        Assert.Equal(2, data.Length);
+        Assert.Equal("CH1 (C3-P3)", data[0].ChannelName);
+        Assert.Equal("CH2 (C4-P4)", data[1].ChannelName);
+        Assert.Equal(10.0f, data[0].Samples.Span[0]);
+        Assert.Equal(20.0f, data[1].Samples.Span[0]);
+
+        bridge.DetachSource();
+    }
+
+    [Fact]
+    public void SourceMapping_Lane0ToPhysical3_Lane1ToPhysical1_MixedMapping()
+    {
+        // Test EEG-1 → CH4 (physical 3, cross-channel), EEG-2 → CH2 (physical 1)
+        using var bridge = new EegDataBridge(sampleRate: 160, sweepSeconds: 1);
+        var source = new TestEegSource();
+        bridge.AttachSource(source);
+
+        bridge.SetChannelMapping(3, 1);  // Lane 0 → CH4, Lane 1 → CH2
+
+        source.EmitSample(new EegSample
+        {
+            TimestampUs = 0,
+            Ch1Uv = 10.0,
+            Ch2Uv = 20.0,
+            Ch3Uv = 30.0,
+            Ch4Uv = 40.0,   // This should map to display lane 0
+            QualityFlags = QualityFlag.Normal
+        });
+
+        var data = bridge.GetSweepData();
+        Assert.Equal(2, data.Length);
+        Assert.Equal("CH4 (C3-C4)", data[0].ChannelName);  // Lane 0 shows CH4
+        Assert.Equal("CH2 (C4-P4)", data[1].ChannelName);  // Lane 1 shows CH2
+        Assert.Equal(40.0f, data[0].Samples.Span[0]);      // Lane 0 data = CH4 data
+        Assert.Equal(20.0f, data[1].Samples.Span[0]);      // Lane 1 data = CH2 data
+
+        bridge.DetachSource();
+    }
+
+    [Fact]
+    public void SourceMapping_BothLanesToPhysical0_DuplicateSource()
+    {
+        // Test both EEG lanes showing the same source (valid use case for comparison)
+        using var bridge = new EegDataBridge(sampleRate: 160, sweepSeconds: 1);
+        var source = new TestEegSource();
+        bridge.AttachSource(source);
+
+        bridge.SetChannelMapping(0, 0);  // Both lanes → CH1
+
+        source.EmitSample(new EegSample
+        {
+            TimestampUs = 0,
+            Ch1Uv = 15.0,
+            Ch2Uv = 25.0,
+            Ch3Uv = 35.0,
+            Ch4Uv = 45.0,
+            QualityFlags = QualityFlag.Normal
+        });
+
+        var data = bridge.GetSweepData();
+        Assert.Equal(2, data.Length);
+        Assert.Equal("CH1 (C3-P3)", data[0].ChannelName);
+        Assert.Equal("CH1 (C3-P3)", data[1].ChannelName);  // Same source
+        Assert.Equal(15.0f, data[0].Samples.Span[0]);
+        Assert.Equal(15.0f, data[1].Samples.Span[0]);      // Identical data
+
+        bridge.DetachSource();
+    }
+
+    [Fact]
+    public void SourceMapping_AllValidSources_AreAccessible()
+    {
+        // Verify all valid source options (0=CH1, 1=CH2, 3=CH4) are correctly mappable
+        // This ensures no physical channel mapping is broken
+        using var bridge = new EegDataBridge(sampleRate: 160, sweepSeconds: 1);
+        var source = new TestEegSource();
+        bridge.AttachSource(source);
+
+        source.EmitSample(new EegSample
+        {
+            TimestampUs = 0,
+            Ch1Uv = 111.0,
+            Ch2Uv = 222.0,
+            Ch3Uv = 333.0,
+            Ch4Uv = 444.0,
+            QualityFlags = QualityFlag.Normal
+        });
+
+        // Test CH1 (source 0)
+        bridge.SetChannelMapping(0, 0);
+        var data0 = bridge.GetSweepData();
+        Assert.Equal(111.0f, data0[0].Samples.Span[0]);
+
+        // Test CH2 (source 1)
+        bridge.SetChannelMapping(1, 1);
+        var data1 = bridge.GetSweepData();
+        Assert.Equal(222.0f, data1[0].Samples.Span[0]);
+
+        // Test CH4 (source 3)
+        bridge.SetChannelMapping(3, 3);
+        var data3 = bridge.GetSweepData();
+        Assert.Equal(444.0f, data3[0].Samples.Span[0]);
+
+        bridge.DetachSource();
+    }
+
     private static float ComputeStdDev(ReadOnlySpan<float> samples)
     {
         if (samples.Length == 0)

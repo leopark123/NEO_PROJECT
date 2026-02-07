@@ -36,12 +36,13 @@ public class AuditServiceTests
     {
         var audit = new AuditServiceAdapter();
 
-        // All 11 event types (10 from UI_SPEC §10 + LEAD_CHANGE added 2026-02-08)
+        // All 12 event types (10 from UI_SPEC §10 + LEAD_CHANGE + CHANNEL_MAP_CHANGE)
         audit.Log(AuditEventTypes.MonitoringStart);
         audit.Log(AuditEventTypes.MonitoringStop);
         audit.Log(AuditEventTypes.FilterChange);
         audit.Log(AuditEventTypes.GainChange);
         audit.Log(AuditEventTypes.LeadChange);
+        audit.Log(AuditEventTypes.ChannelMapChange);
         audit.Log(AuditEventTypes.Seek);
         audit.Log(AuditEventTypes.Annotation);
         audit.Log(AuditEventTypes.Screenshot);
@@ -50,7 +51,7 @@ public class AuditServiceTests
         audit.Log(AuditEventTypes.DeviceDisconnect);
 
         var events = audit.GetRecentEvents(20);
-        Assert.Equal(11, events.Count);
+        Assert.Equal(12, events.Count);
     }
 
     [Fact]
@@ -119,17 +120,37 @@ public class AuditServiceTests
     [Fact]
     public void AuditEventTypes_ContainsAllDefinedTypes()
     {
-        // Verify all defined event types (10 from UI_SPEC §10 + LEAD_CHANGE added 2026-02-08)
+        // Verify all defined event types (10 from UI_SPEC §10 + LEAD_CHANGE + CHANNEL_MAP_CHANGE)
         Assert.Equal("MONITORING_START", AuditEventTypes.MonitoringStart);
         Assert.Equal("MONITORING_STOP", AuditEventTypes.MonitoringStop);
         Assert.Equal("FILTER_CHANGE", AuditEventTypes.FilterChange);
         Assert.Equal("GAIN_CHANGE", AuditEventTypes.GainChange);
         Assert.Equal("LEAD_CHANGE", AuditEventTypes.LeadChange);
+        Assert.Equal("CHANNEL_MAP_CHANGE", AuditEventTypes.ChannelMapChange);
         Assert.Equal("SEEK", AuditEventTypes.Seek);
         Assert.Equal("ANNOTATION", AuditEventTypes.Annotation);
         Assert.Equal("SCREENSHOT", AuditEventTypes.Screenshot);
         Assert.Equal("USER_LOGIN", AuditEventTypes.UserLogin);
         Assert.Equal("USER_LOGOUT", AuditEventTypes.UserLogout);
         Assert.Equal("DEVICE_DISCONNECT", AuditEventTypes.DeviceDisconnect);
+    }
+
+    // Commit 5: CHANNEL_MAP_CHANGE audit test (per-lane source selection)
+    [Fact]
+    public void ChannelMapChange_IsLogged_WithSourceDetails()
+    {
+        var audit = new AuditServiceAdapter();
+        var initialCount = audit.GetRecentEvents(100).Count;
+
+        audit.Log(AuditEventTypes.ChannelMapChange, "EEG-1: CH1 (C3-P3), EEG-2: CH4 (C3-C4, 跨导联)");
+
+        var events = audit.GetRecentEvents(100);
+        Assert.Equal(initialCount + 1, events.Count);
+
+        var mapEvent = events[^1];
+        Assert.Equal(AuditEventTypes.ChannelMapChange, mapEvent.EventType);
+        Assert.NotNull(mapEvent.Details);
+        Assert.Contains("EEG-1:", mapEvent.Details);
+        Assert.Contains("EEG-2:", mapEvent.Details);
     }
 }

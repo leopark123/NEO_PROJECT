@@ -294,6 +294,137 @@ public sealed class WaveformRenderHostTests
 #pragma warning restore CS0618
     }
 
+    // Commit 5: Per-lane gain/range independence tests
+    [Fact]
+    public void Lane0Gain_DefaultIs100()
+    {
+        using var host = new WaveformRenderHost();
+        Assert.Equal(100, host.Lane0GainMicrovoltsPerCm);
+    }
+
+    [Fact]
+    public void Lane1Gain_DefaultIs100()
+    {
+        using var host = new WaveformRenderHost();
+        Assert.Equal(100, host.Lane1GainMicrovoltsPerCm);
+    }
+
+    [Fact]
+    public void Lane0Range_DefaultIs100()
+    {
+        using var host = new WaveformRenderHost();
+        Assert.Equal(100, host.Lane0YAxisRangeUv);
+    }
+
+    [Fact]
+    public void Lane1Range_DefaultIs100()
+    {
+        using var host = new WaveformRenderHost();
+        Assert.Equal(100, host.Lane1YAxisRangeUv);
+    }
+
+    [Fact]
+    public void PerLaneGain_CanBeSetIndependently()
+    {
+        // Verify EEG-1 and EEG-2 can have different gain settings
+        using var host = new WaveformRenderHost();
+
+        host.Lane0GainMicrovoltsPerCm = 50;
+        host.Lane1GainMicrovoltsPerCm = 200;
+
+        Assert.Equal(50, host.Lane0GainMicrovoltsPerCm);
+        Assert.Equal(200, host.Lane1GainMicrovoltsPerCm);
+    }
+
+    [Fact]
+    public void PerLaneRange_CanBeSetIndependently()
+    {
+        // Verify EEG-1 and EEG-2 can have different range settings
+        using var host = new WaveformRenderHost();
+
+        host.Lane0YAxisRangeUv = 25;
+        host.Lane1YAxisRangeUv = 200;
+
+        Assert.Equal(25, host.Lane0YAxisRangeUv);
+        Assert.Equal(200, host.Lane1YAxisRangeUv);
+    }
+
+    [Fact]
+    public void Lane0Gain_ClampsToValidRange()
+    {
+        using var host = new WaveformRenderHost();
+
+        host.Lane0GainMicrovoltsPerCm = 5;    // Below minimum
+        Assert.Equal(10, host.Lane0GainMicrovoltsPerCm);
+
+        host.Lane0GainMicrovoltsPerCm = 2000; // Above maximum
+        Assert.Equal(1000, host.Lane0GainMicrovoltsPerCm);
+    }
+
+    [Fact]
+    public void Lane1Gain_ClampsToValidRange()
+    {
+        using var host = new WaveformRenderHost();
+
+        host.Lane1GainMicrovoltsPerCm = 5;    // Below minimum
+        Assert.Equal(10, host.Lane1GainMicrovoltsPerCm);
+
+        host.Lane1GainMicrovoltsPerCm = 2000; // Above maximum
+        Assert.Equal(1000, host.Lane1GainMicrovoltsPerCm);
+    }
+
+    [Fact]
+    public void Lane0Range_ClampsToValidRange()
+    {
+        using var host = new WaveformRenderHost();
+
+        host.Lane0YAxisRangeUv = 10;  // Below minimum
+        Assert.Equal(25, host.Lane0YAxisRangeUv);
+
+        host.Lane0YAxisRangeUv = 500; // Above maximum
+        Assert.Equal(200, host.Lane0YAxisRangeUv);
+    }
+
+    [Fact]
+    public void Lane1Range_ClampsToValidRange()
+    {
+        using var host = new WaveformRenderHost();
+
+        host.Lane1YAxisRangeUv = 10;  // Below minimum
+        Assert.Equal(25, host.Lane1YAxisRangeUv);
+
+        host.Lane1YAxisRangeUv = 500; // Above maximum
+        Assert.Equal(200, host.Lane1YAxisRangeUv);
+    }
+
+    [Fact]
+    public void LegacyGainProperty_UpdatesBothLanes()
+    {
+        // Verify backward compatibility: setting legacy property updates both lanes
+        using var host = new WaveformRenderHost();
+
+#pragma warning disable CS0618 // Testing legacy property backward compatibility
+        host.GainMicrovoltsPerCm = 70;
+#pragma warning restore CS0618
+
+        Assert.Equal(70, host.Lane0GainMicrovoltsPerCm);
+        Assert.Equal(70, host.Lane1GainMicrovoltsPerCm);
+    }
+
+    [Fact]
+    public void LegacyRangeProperty_UpdatesBothLanes()
+    {
+        // Verify backward compatibility: setting legacy property updates both lanes
+        using var host = new WaveformRenderHost();
+
+#pragma warning disable CS0618 // Testing legacy property backward compatibility
+        host.YAxisRangeUv = 50;
+#pragma warning restore CS0618
+
+        Assert.Equal(50, host.Lane0YAxisRangeUv);
+        Assert.Equal(50, host.Lane1YAxisRangeUv);
+    }
+
     [Fact]
     public void AeegVisibleHours_DefaultIs3()
     {
