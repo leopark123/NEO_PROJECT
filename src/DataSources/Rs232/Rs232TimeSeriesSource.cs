@@ -334,13 +334,39 @@ public sealed class Rs232NirsSource : ITimeSeriesSource<NirsSample>, IDisposable
         _parser.PacketParsed += OnPacketParsed;
         _parser.CrcErrorOccurred += OnCrcError;
 
-        // 验证串口配置是否符合 Nonin X-100M 要求
-        // 来源: ICD §5 L190-196
-        if (_config.BaudRate != 57600)
+        ValidateNoninSerialConfig(_config);
+    }
+
+    private static void ValidateNoninSerialConfig(Rs232Config config)
+    {
+        const string protocolName = "Nonin X-100M (Nonin 1)";
+
+        if (config.BaudRate != 57600)
         {
-            System.Diagnostics.Debug.WriteLine(
-                $"[NIRS] Warning: Expected baud rate 57600, got {_config.BaudRate}. " +
-                "This may cause communication errors with Nonin X-100M device.");
+            throw new ArgumentException(
+                $"Invalid NIRS serial config for {protocolName}: BaudRate must be 57600, got {config.BaudRate}.",
+                nameof(config));
+        }
+
+        if (config.DataBits != 8)
+        {
+            throw new ArgumentException(
+                $"Invalid NIRS serial config for {protocolName}: DataBits must be 8, got {config.DataBits}.",
+                nameof(config));
+        }
+
+        if (config.StopBits != StopBitsOption.One)
+        {
+            throw new ArgumentException(
+                $"Invalid NIRS serial config for {protocolName}: StopBits must be One (8N1), got {config.StopBits}.",
+                nameof(config));
+        }
+
+        if (config.Parity != ParityOption.None)
+        {
+            throw new ArgumentException(
+                $"Invalid NIRS serial config for {protocolName}: Parity must be None (8N1), got {config.Parity}.",
+                nameof(config));
         }
     }
 

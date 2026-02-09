@@ -298,16 +298,18 @@ public class WaveformViewModelTests
     // Per-EEG lane configuration tests
 
     [Fact]
-    public void SourceOptions_Contains3Channels()
+    public void SourceOptions_Contains4Channels()
     {
-        // CH1 (C3-P3), CH2 (C4-P4), CH4 (C3-C4, cross-channel)
-        Assert.Equal(3, WaveformViewModel.SourceOptions.Count);
+        // CH1 (C3-P3), CH2 (C4-P4), CH3 (P3-P4), CH4 (C3-C4, cross-channel)
+        Assert.Equal(4, WaveformViewModel.SourceOptions.Count);
         Assert.Equal("CH1 (C3-P3)", WaveformViewModel.SourceOptions[0].Label);
         Assert.Equal(0, WaveformViewModel.SourceOptions[0].PhysicalChannel);
         Assert.Equal("CH2 (C4-P4)", WaveformViewModel.SourceOptions[1].Label);
         Assert.Equal(1, WaveformViewModel.SourceOptions[1].PhysicalChannel);
-        Assert.Equal("CH4 (C3-C4, 跨导联)", WaveformViewModel.SourceOptions[2].Label);
-        Assert.Equal(3, WaveformViewModel.SourceOptions[2].PhysicalChannel);
+        Assert.Equal("CH3 (P3-P4)", WaveformViewModel.SourceOptions[2].Label);
+        Assert.Equal(2, WaveformViewModel.SourceOptions[2].PhysicalChannel);
+        Assert.Equal("跨导联", WaveformViewModel.SourceOptions[3].Label);
+        Assert.Equal(3, WaveformViewModel.SourceOptions[3].PhysicalChannel);
     }
 
     [Fact]
@@ -337,10 +339,21 @@ public class WaveformViewModelTests
     {
         var vm = CreateVm(out _);
 
-        vm.Eeg1Source = WaveformViewModel.SourceOptions[2];  // CH4
+        vm.Eeg1Source = WaveformViewModel.SourceOptions[3];  // CH4
 
-        Assert.Equal(WaveformViewModel.SourceOptions[2], vm.Eeg1Source);
+        Assert.Equal(WaveformViewModel.SourceOptions[3], vm.Eeg1Source);
         Assert.Equal(3, vm.Eeg1Source.PhysicalChannel);
+    }
+
+    [Fact]
+    public void Eeg2Source_CanSelectCh3()
+    {
+        var vm = CreateVm(out _);
+
+        vm.Eeg2Source = WaveformViewModel.SourceOptions[2];  // CH3
+
+        Assert.Equal(WaveformViewModel.SourceOptions[2], vm.Eeg2Source);
+        Assert.Equal(2, vm.Eeg2Source.PhysicalChannel);
     }
 
     [Fact]

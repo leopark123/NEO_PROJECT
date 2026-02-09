@@ -27,9 +27,9 @@ public partial class WaveformPanel : UserControl
         Unloaded += OnUnloaded;
         DataContextChanged += OnDataContextChanged;
         SizeChanged += OnSizeChanged;
-        MouseLeftButtonDown += OnMouseLeftButtonDown;
-        MouseLeftButtonUp += OnMouseLeftButtonUp;
-        MouseMove += OnMouseMove;
+        RenderImage.MouseLeftButtonDown += OnMouseLeftButtonDown;
+        RenderImage.MouseLeftButtonUp += OnMouseLeftButtonUp;
+        RenderImage.MouseMove += OnMouseMove;
     }
 
     private void OnLoaded(object sender, RoutedEventArgs e)
@@ -46,9 +46,7 @@ public partial class WaveformPanel : UserControl
             _renderHost = new WaveformRenderHost(vm?.Audit, vm?.Waveform?.ThemeService);
             _renderHost.DataBridge.EnableClinicalMockShaping = true;
 
-            int width = (int)ActualWidth;
-            int height = (int)ActualHeight;
-            if (width > 0 && height > 0)
+            if (TryGetRenderSurfaceSize(out int width, out int height))
             {
                 _renderHost.Resize(width, height);
             }
@@ -125,7 +123,6 @@ public partial class WaveformPanel : UserControl
         _renderHost.YAxisRangeUv = vm.Waveform.SelectedYAxis;
 #pragma warning restore CS0618
         _renderHost.AeegVisibleHours = vm.Waveform.SelectedAeegHours;
-        _renderHost.ShowGsHistogram = vm.Waveform.ShowGsHistogram;
 
         // Per-lane channel mapping from Eeg1Source/Eeg2Source
         ApplyPerLaneChannelMapping(vm.Waveform.Eeg1Source, vm.Waveform.Eeg2Source);
@@ -174,9 +171,6 @@ public partial class WaveformPanel : UserControl
             case nameof(WaveformViewModel.SelectedAeegHours):
                 _renderHost.AeegVisibleHours = vm.SelectedAeegHours;
                 break;
-            case nameof(WaveformViewModel.ShowGsHistogram):
-                _renderHost.ShowGsHistogram = vm.ShowGsHistogram;
-                break;
             case nameof(WaveformViewModel.SelectedLeadCombination):
                 ApplyLeadCombinationMapping(vm.SelectedLeadCombination);
                 break;
@@ -190,28 +184,16 @@ public partial class WaveformPanel : UserControl
 
             // Per-lane gain/range (Commit 4: RenderHost now supports per-lane configuration)
             case nameof(WaveformViewModel.Eeg1Gain):
-#pragma warning disable CS0618 // Using obsolete property for backward compatibility
                 _renderHost.Lane0GainMicrovoltsPerCm = vm.Eeg1Gain;
-                _renderHost.GainMicrovoltsPerCm = vm.Eeg1Gain; // Also update legacy property
-#pragma warning restore CS0618
                 break;
             case nameof(WaveformViewModel.Eeg2Gain):
-#pragma warning disable CS0618
                 _renderHost.Lane1GainMicrovoltsPerCm = vm.Eeg2Gain;
-                _renderHost.GainMicrovoltsPerCm = vm.Eeg2Gain; // Also update legacy property
-#pragma warning restore CS0618
                 break;
             case nameof(WaveformViewModel.Eeg1Range):
-#pragma warning disable CS0618
                 _renderHost.Lane0YAxisRangeUv = vm.Eeg1Range;
-                _renderHost.YAxisRangeUv = vm.Eeg1Range; // Also update legacy property
-#pragma warning restore CS0618
                 break;
             case nameof(WaveformViewModel.Eeg2Range):
-#pragma warning disable CS0618
                 _renderHost.Lane1YAxisRangeUv = vm.Eeg2Range;
-                _renderHost.YAxisRangeUv = vm.Eeg2Range; // Also update legacy property
-#pragma warning restore CS0618
                 break;
         }
     }
@@ -293,28 +275,7 @@ public partial class WaveformPanel : UserControl
 
     private void OnSizeChanged(object sender, SizeChangedEventArgs e)
     {
-        if (_renderHost == null || _deviceLost)
-        {
-            return;
-        }
-
-        int width = (int)e.NewSize.Width;
-        int height = (int)e.NewSize.Height;
-
-        if (width <= 0 || height <= 0)
-        {
-            return;
-        }
-
-        try
-        {
-            _renderHost.Resize(width, height);
-            RenderImage.Source = _renderHost.ImageSource;
-        }
-        catch
-        {
-            ShowDeviceLostOverlay();
-        }
+        ResizeRenderSurface();
     }
 
     private void OnMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
@@ -324,7 +285,7 @@ public partial class WaveformPanel : UserControl
             return;
         }
 
-        var point = e.GetPosition(this);
+        var point = e.GetPosition(RenderImage);
         if (_renderHost.TrySetSeekFromPoint(point.X, point.Y))
         {
             _isSeekDragging = true;
@@ -352,7 +313,7 @@ public partial class WaveformPanel : UserControl
             return;
         }
 
-        var point = e.GetPosition(this);
+        var point = e.GetPosition(RenderImage);
         _renderHost.TrySetSeekFromPoint(point.X, point.Y);
         e.Handled = true;
     }
@@ -379,9 +340,7 @@ public partial class WaveformPanel : UserControl
             _deviceLost = false;
             ErrorOverlay.Visibility = Visibility.Collapsed;
 
-            int width = (int)ActualWidth;
-            int height = (int)ActualHeight;
-            if (width > 0 && height > 0)
+            if (TryGetRenderSurfaceSize(out int width, out int height))
             {
                 _renderHost.Resize(width, height);
                 RenderImage.Source = _renderHost.ImageSource;
@@ -392,6 +351,36 @@ public partial class WaveformPanel : UserControl
         else
         {
             ErrorOverlay.MouseLeftButtonDown += OnRecoveryClick;
+        }
+    }
+
+    private bool TryGetRenderSurfaceSize(out int width, out int height)
+    {
+        width = (int)RenderHostContainer.ActualWidth;
+        height = (int)RenderHostContainer.ActualHeight;
+        return width > 0 && height > 0;
+    }
+
+    private void ResizeRenderSurface()
+    {
+        if (_renderHost == null || _deviceLost)
+        {
+            return;
+        }
+
+        if (!TryGetRenderSurfaceSize(out int width, out int height))
+        {
+            return;
+        }
+
+        try
+        {
+            _renderHost.Resize(width, height);
+            RenderImage.Source = _renderHost.ImageSource;
+        }
+        catch
+        {
+            ShowDeviceLostOverlay();
         }
     }
 }

@@ -93,4 +93,50 @@ public class NirsViewModelTests
 
         Assert.Equal("Blocked", vm.Channels[0].StatusText);
     }
+
+    [Fact]
+    public void ApplySourceSwitchCommand_RealModeWithPort_RaisesRequest()
+    {
+        var vm = new NirsViewModel(() => ["COM7"])
+        {
+            SelectedSourceMode = "real"
+        };
+
+        NirsSourceSwitchRequest? captured = null;
+        vm.SourceSwitchRequested += request => captured = request;
+
+        vm.ApplySourceSwitchCommand.Execute(null);
+
+        Assert.True(captured.HasValue);
+        Assert.Equal("real", captured.Value.Mode);
+        Assert.Equal("COM7", captured.Value.PortName);
+    }
+
+    [Fact]
+    public void ApplySourceSwitchCommand_RealModeWithoutPort_DoesNotRaiseAndSetsStatus()
+    {
+        var vm = new NirsViewModel(() => Array.Empty<string>())
+        {
+            SelectedSourceMode = "real"
+        };
+
+        bool raised = false;
+        vm.SourceSwitchRequested += _ => raised = true;
+
+        vm.ApplySourceSwitchCommand.Execute(null);
+
+        Assert.False(raised);
+        Assert.Contains("requires selecting", vm.PanelStatus, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void Constructor_LoadsDetectedSerialPorts_AndSelectsFirst()
+    {
+        var vm = new NirsViewModel(() => ["COM5", "COM3"]);
+
+        Assert.Equal(2, vm.SerialPortOptions.Count);
+        Assert.Equal("COM3", vm.SerialPortOptions[0]);
+        Assert.Equal("COM5", vm.SerialPortOptions[1]);
+        Assert.Equal("COM3", vm.SelectedSerialPort);
+    }
 }

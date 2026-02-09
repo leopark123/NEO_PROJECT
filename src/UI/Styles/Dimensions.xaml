@@ -11,7 +11,7 @@
     <sys:Double x:Key="Dim.ToolbarHeight">60</sys:Double>
     <sys:Double x:Key="Dim.NavigationWidth">60</sys:Double>
     <sys:Double x:Key="Dim.StatusBarHeight">30</sys:Double>
-    <sys:Double x:Key="Dim.RightPanelWidth">300</sys:Double>
+    <sys:Double x:Key="Dim.RightPanelWidth">400</sys:Double>
     <sys:Double x:Key="Dim.DialogSmallWidth">400</sys:Double>
     <sys:Double x:Key="Dim.DialogSmallHeight">260</sys:Double>
     <sys:Double x:Key="Dim.DialogMediumWidth">640</sys:Double>
@@ -23,7 +23,7 @@
     <sys:Double x:Key="Dim.TouchMinSize">44</sys:Double>
 
     <!-- ── Right param panel minimum (UI_SPEC §4.2) ── -->
-    <sys:Double x:Key="Dim.ParamPanelMinWidth">150</sys:Double>
+    <sys:Double x:Key="Dim.ParamPanelMinWidth">240</sys:Double>
 
     <!-- ── Spacing (Apple-style spacing) ── -->
     <sys:Double x:Key="Dim.ButtonSpacing">12</sys:Double>

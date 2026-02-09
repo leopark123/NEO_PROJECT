@@ -36,7 +36,8 @@
       "Bash(curl:*)",
       "Bash(unset:*)",
       "Bash(git push:*)",
-      "Bash(cmd.exe /c \"taskkill /F /PID 8760\")"
+      "Bash(cmd.exe /c \"taskkill /F /PID 8760\")",
+      "Bash(done)"
     ]
   }
 }

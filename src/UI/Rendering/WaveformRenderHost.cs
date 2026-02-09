@@ -53,7 +53,6 @@ public sealed class WaveformRenderHost : IDisposable
     private readonly AeegSeriesBuilder _aeegBuilder;
     private readonly UiAeegTrendRenderer _aeegRenderer;
     private readonly UiAeegGridAndAxisRenderer _aeegGridRenderer;
-    private readonly GsHistogramRenderer _gsRenderer;
     private readonly EegPreviewRenderer _eegPreviewRenderer;
     private readonly PlaybackClock _playbackClock;
     private readonly IAuditService? _audit;
@@ -71,8 +70,6 @@ public sealed class WaveformRenderHost : IDisposable
     private AeegTrendRenderData _aeegCh2RenderData;
     private bool _aeegCh1Ready;
     private bool _aeegCh2Ready;
-    private byte[]? _gsBinsCh1;
-    private byte[]? _gsBinsCh2;
     private long _playbackStartUs = 0;
     private long _playbackEndUs = 24L * 60 * 60 * 1_000_000; // 24 hours mock range
 
@@ -241,7 +238,6 @@ public sealed class WaveformRenderHost : IDisposable
         _aeegBuilder = new AeegSeriesBuilder();
         _aeegRenderer = new UiAeegTrendRenderer();
         _aeegGridRenderer = new UiAeegGridAndAxisRenderer();
-        _gsRenderer = new GsHistogramRenderer();
         _eegPreviewRenderer = new EegPreviewRenderer();
         _playbackClock = new PlaybackClock();
         _playbackClock.SeekTo(_playbackStartUs);
@@ -360,7 +356,7 @@ public sealed class WaveformRenderHost : IDisposable
 
                 // aEEG Ch1 (25%)
                 RenderAeeg(_renderer.DeviceContext, _layout.Aeeg1,
-                    _aeegCh1Ready ? _aeegCh1RenderData : null, _gsBinsCh1);
+                    _aeegCh1Ready ? _aeegCh1RenderData : null);
 
                 // EEG Preview Ch1 (5%) - narrow strip with waveform (Lane 0 / EEG-1)
                 if (sweepData.Length >= 1)
@@ -371,7 +367,7 @@ public sealed class WaveformRenderHost : IDisposable
 
                 // aEEG Ch2 (25%)
                 RenderAeeg(_renderer.DeviceContext, _layout.Aeeg2,
-                    _aeegCh2Ready ? _aeegCh2RenderData : null, _gsBinsCh2);
+                    _aeegCh2Ready ? _aeegCh2RenderData : null);
 
                 // EEG Preview Ch2 (5%) - narrow strip with waveform (Lane 1 / EEG-2)
                 if (sweepData.Length >= 2)
@@ -462,10 +458,6 @@ public sealed class WaveformRenderHost : IDisposable
         _aeegCh1Ready = BuildAeegRenderData(0, ch1TrendArea, startUs, endUs, out _aeegCh1RenderData);
         _aeegCh2Ready = BuildAeegRenderData(1, ch2TrendArea, startUs, endUs, out _aeegCh2RenderData);
 
-        var gs1 = _dataBridge.GetGsHistogramSnapshot(0, endUs);
-        var gs2 = _dataBridge.GetGsHistogramSnapshot(1, endUs);
-        _gsBinsCh1 = gs1.Bins;
-        _gsBinsCh2 = gs2.Bins;
     }
 
     private bool BuildAeegRenderData(
@@ -521,8 +513,7 @@ public sealed class WaveformRenderHost : IDisposable
     private void RenderAeeg(
         ID2D1DeviceContext context,
         in Vortice.Mathematics.Rect area,
-        AeegTrendRenderData? data,
-        byte[]? gsBins)
+        AeegTrendRenderData? data)
     {
         if (area.Width <= 0 || area.Height <= 0)
             return;
@@ -532,7 +523,6 @@ public sealed class WaveformRenderHost : IDisposable
 
         var yAxisArea = GetAeegYAxisArea(area);
         var trendArea = GetAeegTrendArea(area);
-        var gsArea = GetAeegGsArea(area);
         var timeAxisArea = GetAeegTimeAxisArea(area);
 
         // Calculate visible time range for aEEG
@@ -552,20 +542,12 @@ public sealed class WaveformRenderHost : IDisposable
 
         if (data.HasValue)
         {
-            _aeegRenderer.Render(context, _resourceCache, data.Value, useLineMode: false);
+            // Display aEEG as polylines (same visual mode class as EEG, with distinct aEEG palette).
+            _aeegRenderer.Render(context, _resourceCache, data.Value, useLineMode: true);
         }
         else
         {
             RenderPlaceholder(context, "aEEG Trend", trendArea);
-        }
-
-        if (gsBins != null && gsBins.Length > 0)
-        {
-            _gsRenderer.Render(context, _resourceCache, gsArea, gsBins);
-        }
-        else
-        {
-            RenderPlaceholder(context, "GS", gsArea);
         }
     }
 
@@ -582,7 +564,6 @@ public sealed class WaveformRenderHost : IDisposable
 
         var yAxisArea = GetAeegYAxisArea(area);
         var trendArea = GetAeegTrendArea(area);
-        var gsArea = GetAeegGsArea(area);
         var timeAxisArea = GetAeegTimeAxisArea(area);
 
         // Calculate visible time range
@@ -602,32 +583,9 @@ public sealed class WaveformRenderHost : IDisposable
 
         // Render both channels
         if (_aeegCh1Ready)
-            _aeegRenderer.Render(context, _resourceCache, _aeegCh1RenderData, useLineMode: false);
+            _aeegRenderer.Render(context, _resourceCache, _aeegCh1RenderData, useLineMode: true);
         if (_aeegCh2Ready)
-            _aeegRenderer.Render(context, _resourceCache, _aeegCh2RenderData, useLineMode: false);
-
-        // Render GS histograms (split vertically if both channels have data)
-        if (_showGsHistogram)
-        {
-            if (_gsBinsCh1 != null && _gsBinsCh1.Length > 0)
-            {
-                var gs1Area = new Vortice.Mathematics.Rect(
-                    gsArea.Left,
-                    gsArea.Top,
-                    gsArea.Width,
-                    gsArea.Height * 0.5f);
-                _gsRenderer.Render(context, _resourceCache, gs1Area, _gsBinsCh1);
-            }
-            if (_gsBinsCh2 != null && _gsBinsCh2.Length > 0)
-            {
-                var gs2Area = new Vortice.Mathematics.Rect(
-                    gsArea.Left,
-                    gsArea.Top + gsArea.Height * 0.5f,
-                    gsArea.Width,
-                    gsArea.Height * 0.5f);
-                _gsRenderer.Render(context, _resourceCache, gs2Area, _gsBinsCh2);
-            }
-        }
+            _aeegRenderer.Render(context, _resourceCache, _aeegCh2RenderData, useLineMode: true);
     }
 
     private void RenderTimeAxisLabels(
@@ -670,7 +628,7 @@ public sealed class WaveformRenderHost : IDisposable
 
     // aEEG layout constants - based on reference design
     private const float AeegYAxisLabelWidth = 50f;   // Y-axis labels on left (reduced to avoid overlap with toolbar)
-    private float AeegGsWidthRatio => _showGsHistogram ? 0.30f : 0.0f;  // GS histogram on right (30% if enabled, 0% if disabled)
+    private float AeegGsWidthRatio => 0.0f;  // GS histogram removed from UI baseline
     private const float AeegTimeAxisHeight = 18f;    // X-axis time labels at bottom
 
     private Vortice.Mathematics.Rect GetAeegYAxisArea(in Vortice.Mathematics.Rect area)
@@ -683,7 +641,7 @@ public sealed class WaveformRenderHost : IDisposable
 
     private Vortice.Mathematics.Rect GetAeegTrendArea(in Vortice.Mathematics.Rect area)
     {
-        float gsWidth = Math.Max(40f, (float)area.Width * AeegGsWidthRatio);
+        float gsWidth = GetAeegGsWidth((float)area.Width);
         float trendWidth = Math.Max(0f, (float)area.Width - AeegYAxisLabelWidth - gsWidth);
         float trendHeight = Math.Max(0f, (float)area.Height - AeegTimeAxisHeight);
         return new Vortice.Mathematics.Rect(area.Left + AeegYAxisLabelWidth, area.Top, trendWidth, trendHeight);
@@ -691,16 +649,26 @@ public sealed class WaveformRenderHost : IDisposable
 
     private Vortice.Mathematics.Rect GetAeegGsArea(in Vortice.Mathematics.Rect area)
     {
-        float gsWidth = Math.Max(40f, (float)area.Width * AeegGsWidthRatio);
+        float gsWidth = GetAeegGsWidth((float)area.Width);
         float gsHeight = Math.Max(0f, (float)area.Height - AeegTimeAxisHeight);
         return new Vortice.Mathematics.Rect(area.Right - gsWidth, area.Top, gsWidth, gsHeight);
     }
 
     private Vortice.Mathematics.Rect GetAeegTimeAxisArea(in Vortice.Mathematics.Rect area)
     {
-        float gsWidth = Math.Max(40f, (float)area.Width * AeegGsWidthRatio);
+        float gsWidth = GetAeegGsWidth((float)area.Width);
         float axisWidth = Math.Max(0f, (float)area.Width - AeegYAxisLabelWidth - gsWidth);
         return new Vortice.Mathematics.Rect(area.Left + AeegYAxisLabelWidth, area.Bottom - AeegTimeAxisHeight, axisWidth, AeegTimeAxisHeight);
+    }
+
+    private float GetAeegGsWidth(float areaWidth)
+    {
+        if (AeegGsWidthRatio <= 0f)
+        {
+            return 0f;
+        }
+
+        return Math.Max(40f, areaWidth * AeegGsWidthRatio);
     }
 
     private static string FormatTimestamp(long timestampUs)

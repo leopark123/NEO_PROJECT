@@ -18,9 +18,9 @@ internal static class UiAeegPalette
     public static readonly Color4 BoundaryLine = new(0.30f, 0.45f, 0.30f, 0.7f);
 
     // Trend
-    public static readonly Color4 UpperBound = new(0.12f, 0.56f, 1.0f, 1.0f);  // #1E90FF
-    public static readonly Color4 LowerBound = new(0.25f, 0.41f, 0.88f, 1.0f);  // #4169E1
-    public static readonly Color4 TrendFill = new(0.12f, 0.56f, 1.0f, 0.3f);    // 30% alpha
+    public static readonly Color4 UpperBound = new(0.98f, 0.64f, 0.18f, 1.0f);  // amber
+    public static readonly Color4 LowerBound = new(0.86f, 0.46f, 0.12f, 1.0f);  // dark amber
+    public static readonly Color4 TrendFill = new(0.98f, 0.64f, 0.18f, 0.22f);  // 22% alpha
 
     // Gaps + markers
     public static readonly Color4 GapMask = new(0.15f, 0.15f, 0.15f, 0.5f);

@@ -1,4 +1,5 @@
 using System.Windows;
+using System.Windows.Threading;
 using Neo.Host;
 using Neo.UI.Services;
 using Neo.UI.ViewModels;
@@ -28,9 +29,7 @@ public partial class App : Application
         var waveform = new WaveformViewModel(_services.Audit, _services.Theme);
         var video = new VideoViewModel();
         var nirs = new NirsViewModel();
-
-        TryStartVideoPipeline(video);
-        TryStartNirsPipeline(nirs);
+        nirs.SourceSwitchRequested += request => ApplyNirsSourceSwitch(nirs, request);
 
         var viewModel = new MainWindowViewModel(
             _services.Navigation,
@@ -49,6 +48,13 @@ public partial class App : Application
 
         MainWindow = mainWindow;
         mainWindow.Show();
+
+        // Ensure main window is visible before potentially slow device initialization.
+        Dispatcher.BeginInvoke(DispatcherPriority.Background, new Action(() =>
+        {
+            TryStartVideoPipeline(video);
+            TryStartNirsPipeline(nirs);
+        }));
     }
 
     protected override void OnExit(ExitEventArgs e)
@@ -80,16 +86,59 @@ public partial class App : Application
     {
         try
         {
-            // 使用 NirsWiring 创建带 MockNirsSource 的 Shell
+            // 使用 NirsWiring 创建 NIRS Shell（NEO_NIRS_MODE=mock|real）
             _nirsWiring = new NirsWiring();
             _nirsWiring.Start();
 
             _nirsController = new NirsPanelController(_nirsWiring.Shell, viewModel, Dispatcher);
             _nirsController.Start();
         }
-        catch
+        catch (Exception ex)
         {
-            viewModel.PanelStatus = "NIRS initialization failed";
+            viewModel.PanelStatus = $"NIRS initialization failed: {ex.Message}";
+        }
+    }
+
+    private void ApplyNirsSourceSwitch(NirsViewModel viewModel, NirsSourceSwitchRequest request)
+    {
+        try
+        {
+            ConfigureNirsEnvironment(request);
+
+            _nirsController?.Dispose();
+            _nirsController = null;
+            _nirsWiring?.Dispose();
+            _nirsWiring = null;
+
+            viewModel.PanelStatus = request.Mode == "real"
+                ? $"Switching NIRS source to real ({request.PortName})..."
+                : "Switching NIRS source to mock...";
+
+            TryStartNirsPipeline(viewModel);
+        }
+        catch (Exception ex)
+        {
+            viewModel.PanelStatus = $"NIRS source switch failed: {ex.Message}";
+        }
+    }
+
+    private static void ConfigureNirsEnvironment(NirsSourceSwitchRequest request)
+    {
+        string mode = request.Mode.Trim().ToLowerInvariant();
+        Environment.SetEnvironmentVariable("NEO_NIRS_MODE", mode, EnvironmentVariableTarget.Process);
+
+        if (mode == "real")
+        {
+            if (string.IsNullOrWhiteSpace(request.PortName))
+            {
+                throw new InvalidOperationException("Real mode requires COM port.");
+            }
+
+            Environment.SetEnvironmentVariable("NEO_NIRS_PORT", request.PortName.Trim(), EnvironmentVariableTarget.Process);
+        }
+        else
+        {
+            Environment.SetEnvironmentVariable("NEO_NIRS_PORT", null, EnvironmentVariableTarget.Process);
         }
     }
 }

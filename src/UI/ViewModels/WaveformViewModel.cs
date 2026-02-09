@@ -28,13 +28,14 @@ public partial class WaveformViewModel : ViewModelBase
 
     /// <summary>
     /// Available channel source options for per-EEG lane configuration.
-    /// Protocol facts: CH1=C3-P3 (A-B), CH2=C4-P4 (C-D), CH4=C3-C4 (A-D, cross-channel/computed)
+    /// Protocol facts: CH1=C3-P3 (A-B), CH2=C4-P4 (C-D), CH3=P3-P4 (B-C), CH4=C3-C4 (A-D, cross-channel/computed)
     /// </summary>
     public static IReadOnlyList<ChannelSourceOption> SourceOptions { get; } =
     [
         new("CH1 (C3-P3)", 0),              // Physical channel 0
         new("CH2 (C4-P4)", 1),              // Physical channel 1
-        new("CH4 (C3-C4, 跨导联)", 3)      // Physical channel 3, computed/cross-channel
+        new("CH3 (P3-P4)", 2),              // Physical channel 2
+        new("跨导联", 3)                   // Physical channel 3, computed/cross-channel
     ];
 
     public static int[] GainOptions { get; } = [10, 20, 50, 70, 100, 200, 1000];

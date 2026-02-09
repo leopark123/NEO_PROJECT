@@ -4,6 +4,9 @@
 // 依据: PROJECT_STATE.md S3-00 已完成 (2026-02-06)
 
 using System.Diagnostics;
+using Neo.Core.Interfaces;
+using Neo.Core.Models;
+using Neo.DataSources.Rs232;
 using Neo.NIRS;
 using Neo.Mock;
 
@@ -21,7 +24,7 @@ namespace Neo.Host;
 public sealed class NirsWiring : IDisposable
 {
     private readonly NirsIntegrationShell _nirsShell;
-    private readonly MockNirsSource _mockSource;
+    private readonly string _sourceMode;
     private bool _disposed;
 
     // 高精度时钟 - 与 EEG 保持一致
@@ -29,9 +32,38 @@ public sealed class NirsWiring : IDisposable
 
     public NirsWiring()
     {
-        // 使用 MockNirsSource 提供模拟数据（默认配置）
-        // 如需使用真实硬件，替换为 Rs232NirsSource
-        _mockSource = new MockNirsSource(
+        // 运行时切换:
+        // - NEO_NIRS_MODE=mock (默认)
+        // - NEO_NIRS_MODE=real + NEO_NIRS_PORT=COMx
+        _sourceMode = ResolveSourceMode();
+        ITimeSeriesSource<NirsSample> source = _sourceMode == "real"
+            ? CreateRealSource()
+            : CreateMockSource();
+
+        _nirsShell = new NirsIntegrationShell(source);
+    }
+
+    private static string ResolveSourceMode()
+    {
+        string? raw = Environment.GetEnvironmentVariable("NEO_NIRS_MODE");
+        if (string.IsNullOrWhiteSpace(raw))
+        {
+            return "mock";
+        }
+
+        string normalized = raw.Trim().ToLowerInvariant();
+        if (normalized is "mock" or "real")
+        {
+            return normalized;
+        }
+
+        throw new InvalidOperationException(
+            $"Unsupported NEO_NIRS_MODE='{raw}'. Use 'mock' or 'real'.");
+    }
+
+    private static ITimeSeriesSource<NirsSample> CreateMockSource()
+    {
+        return new MockNirsSource(
             timestampProvider: GetHostTimestampUs,
             config: new MockNirsConfig
             {
@@ -48,8 +80,29 @@ public sealed class NirsWiring : IDisposable
                 Ch4FailureProbability = 0.01  // Ch4 1% 概率断开
             }
         );
+    }
 
-        _nirsShell = new NirsIntegrationShell(_mockSource);
+    private static ITimeSeriesSource<NirsSample> CreateRealSource()
+    {
+        string? portName = Environment.GetEnvironmentVariable("NEO_NIRS_PORT");
+        if (string.IsNullOrWhiteSpace(portName))
+        {
+            throw new InvalidOperationException(
+                "NEO_NIRS_PORT is required when NEO_NIRS_MODE=real.");
+        }
+
+        var config = new Rs232Config
+        {
+            PortName = portName.Trim(),
+            BaudRate = 57600,
+            DataBits = 8,
+            StopBits = StopBitsOption.One,
+            Parity = ParityOption.None,
+            ReadTimeoutMs = 1000,
+            ReceiveBufferSize = 4096
+        };
+
+        return new Rs232NirsSource(config);
     }
 
     /// <summary>
@@ -73,11 +126,15 @@ public sealed class NirsWiring : IDisposable
 
     /// <summary>
     /// 启动 NIRS 模块。
-    /// 当前仅注册阻塞状态。
+    /// 根据环境变量选择 Mock 或真实设备源。
     /// </summary>
     public void Start()
     {
         _nirsShell.Start();
+
+        System.Diagnostics.Trace.TraceInformation(
+            "[NirsWiring] NIRS source mode: {0}",
+            _sourceMode);
 
         System.Diagnostics.Trace.TraceInformation(
             "[NirsWiring] NIRS module registered. Status: {0}",

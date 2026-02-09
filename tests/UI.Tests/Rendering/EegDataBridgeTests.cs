@@ -491,7 +491,7 @@ public sealed class EegDataBridgeTests
     [Fact]
     public void SourceMapping_AllValidSources_AreAccessible()
     {
-        // Verify all valid source options (0=CH1, 1=CH2, 3=CH4) are correctly mappable
+        // Verify all valid source options (0=CH1, 1=CH2, 2=CH3, 3=CH4) are correctly mappable
         // This ensures no physical channel mapping is broken
         using var bridge = new EegDataBridge(sampleRate: 160, sweepSeconds: 1);
         var source = new TestEegSource();
@@ -516,6 +516,11 @@ public sealed class EegDataBridgeTests
         bridge.SetChannelMapping(1, 1);
         var data1 = bridge.GetSweepData();
         Assert.Equal(222.0f, data1[0].Samples.Span[0]);
+
+        // Test CH3 (source 2)
+        bridge.SetChannelMapping(2, 2);
+        var data2 = bridge.GetSweepData();
+        Assert.Equal(333.0f, data2[0].Samples.Span[0]);
 
         // Test CH4 (source 3)
         bridge.SetChannelMapping(3, 3);

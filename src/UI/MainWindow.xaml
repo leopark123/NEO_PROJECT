@@ -17,9 +17,6 @@
         <controls:StatusBarPanel DockPanel.Dock="Bottom"
                                  DataContext="{Binding Status}"/>
 
-        <controls:ChannelControlPanel DockPanel.Dock="Right"
-                                      DataContext="{Binding Waveform}"/>
-
         <Border x:Name="RightVideoNirsPanel"
                 DockPanel.Dock="Right"
                 Width="{StaticResource Dim.RightPanelWidth}"
@@ -28,16 +25,38 @@
                 BorderBrush="{StaticResource BorderBrush}"
                 BorderThickness="{StaticResource Dim.ParamBorderThickness}">
             <Grid>
-                <Grid.RowDefinitions>
-                    <RowDefinition Height="*"/>
-                    <RowDefinition Height="*"/>
-                </Grid.RowDefinitions>
+                <controls:VideoPanel DataContext="{Binding Video}"/>
 
-                <controls:VideoPanel Grid.Row="0"
-                                     DataContext="{Binding Video}"/>
+                <Grid Margin="8">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="60*"/>
+                        <RowDefinition Height="40*"/>
+                    </Grid.RowDefinitions>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
 
-                <controls:NirsPanel Grid.Row="1"
-                                    DataContext="{Binding Nirs}"/>
+                    <Border Grid.Row="1"
+                            Grid.Column="0"
+                            Margin="0,0,4,0"
+                            Background="{StaticResource BackgroundBrush}"
+                            BorderBrush="{StaticResource BorderBrush}"
+                            BorderThickness="{StaticResource Dim.BorderThicknessThin}"
+                            CornerRadius="{StaticResource Dim.CornerRadiusAll}">
+                        <controls:NirsSourcePanel DataContext="{Binding Nirs}"/>
+                    </Border>
+
+                    <Border Grid.Row="1"
+                            Grid.Column="1"
+                            Margin="4,0,0,0"
+                            Background="{StaticResource BackgroundBrush}"
+                            BorderBrush="{StaticResource BorderBrush}"
+                            BorderThickness="{StaticResource Dim.BorderThicknessThin}"
+                            CornerRadius="{StaticResource Dim.CornerRadiusAll}">
+                        <controls:NirsChannelStatusPanel DataContext="{Binding Nirs}"/>
+                    </Border>
+                </Grid>
             </Grid>
         </Border>
 
