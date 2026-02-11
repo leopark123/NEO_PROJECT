@@ -1,4 +1,4 @@
-<Application x:Class="Neo.UI.App"
+﻿<Application x:Class="Neo.UI.App"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="clr-namespace:Neo.UI.ViewModels">
@@ -18,7 +18,7 @@
 
             <DataTemplate DataType="{x:Type vm:HomeViewModel}">
                 <TextBlock Text="Home - Monitoring View"
-                           Foreground="{StaticResource BorderDarkBrush}"
+                           Foreground="{DynamicResource BorderDarkBrush}"
                            FontSize="{StaticResource FontSize.Body}"
                            HorizontalAlignment="Center"
                            VerticalAlignment="Center"/>
@@ -26,3 +26,4 @@
         </ResourceDictionary>
     </Application.Resources>
 </Application>
+

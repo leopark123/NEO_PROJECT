@@ -2,9 +2,9 @@
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
 
-    <Border Margin="{StaticResource Dim.ParamPanelMargin}"
-            Background="{StaticResource BackgroundDarkBrush}"
-            BorderBrush="{StaticResource BorderBrush}"
+    <Border Margin="0"
+            Background="{DynamicResource BackgroundDarkBrush}"
+            BorderBrush="{DynamicResource BorderBrush}"
             BorderThickness="{StaticResource Dim.BorderThicknessThin}"
             CornerRadius="{StaticResource Dim.CornerRadiusAll}">
         <Grid>
@@ -12,7 +12,7 @@
                    Stretch="Uniform"
                    SnapsToDevicePixels="True"/>
 
-            <Border Background="{StaticResource BackgroundDarkBrush}">
+            <Border Background="{DynamicResource BackgroundDarkBrush}">
                 <Border.Style>
                     <Style TargetType="Border">
                         <Setter Property="Visibility" Value="Visible"/>
@@ -24,18 +24,18 @@
                     </Style>
                 </Border.Style>
                 <TextBlock Text="{Binding StatusText}"
-                           Foreground="{StaticResource TextDarkSecondaryBrush}"
+                           Foreground="{DynamicResource TextDarkSecondaryBrush}"
                            FontSize="{StaticResource FontSize.Body}"
                            HorizontalAlignment="Center"
                            VerticalAlignment="Center"/>
             </Border>
 
             <Border VerticalAlignment="Bottom"
-                    Background="{StaticResource BackgroundBrush}"
-                    BorderBrush="{StaticResource BorderBrush}"
+                    Background="{DynamicResource BackgroundBrush}"
+                    BorderBrush="{DynamicResource BorderBrush}"
                     BorderThickness="{StaticResource Dim.BorderThicknessThin}">
                 <TextBlock Text="{Binding StatusText}"
-                           Foreground="{StaticResource TextDarkSecondaryBrush}"
+                           Foreground="{DynamicResource TextDarkSecondaryBrush}"
                            FontSize="{StaticResource FontSize.Caption}"
                            Margin="{StaticResource Dim.ToggleItemPadding}"/>
             </Border>

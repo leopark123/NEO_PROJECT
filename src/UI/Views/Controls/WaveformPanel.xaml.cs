@@ -1,7 +1,11 @@
 using System.ComponentModel;
+using System.Globalization;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using System.Windows.Media;
+using System.Windows.Shapes;
+using System.Windows.Threading;
 using Neo.Mock;
 using Neo.UI.Rendering;
 using Neo.UI.Services;
@@ -16,12 +20,18 @@ public partial class WaveformPanel : UserControl
     private MainWindowViewModel? _boundViewModel;
     private bool _deviceLost;
     private bool _isSeekDragging;
+    private readonly DispatcherTimer _nirsUiTimer = new() { Interval = TimeSpan.FromMilliseconds(350) };
+    private readonly double[] _nirsTrendValues = [68.0, 71.0, 66.0, 73.0];
+    private readonly double[] _nirsPhaseOffsets = [0.0, 0.9, 1.7, 2.6];
+    private double _nirsUiPhase;
 
     public WaveformRenderHost? RenderHost => _renderHost;
 
     public WaveformPanel()
     {
         InitializeComponent();
+        _nirsUiTimer.Tick += OnNirsUiTimerTick;
+        UpdateNirsUiPlaceholders();
 
         Loaded += OnLoaded;
         Unloaded += OnUnloaded;
@@ -34,6 +44,8 @@ public partial class WaveformPanel : UserControl
 
     private void OnLoaded(object sender, RoutedEventArgs e)
     {
+        StartNirsUiAnimation();
+
         if (_renderHost != null)
         {
             BindViewModel(DataContext as MainWindowViewModel);
@@ -46,9 +58,9 @@ public partial class WaveformPanel : UserControl
             _renderHost = new WaveformRenderHost(vm?.Audit, vm?.Waveform?.ThemeService);
             _renderHost.DataBridge.EnableClinicalMockShaping = true;
 
-            if (TryGetRenderSurfaceSize(out int width, out int height))
+            if (TryGetRenderSurfaceSize(out int width, out int height, out double dpiX, out double dpiY))
             {
-                _renderHost.Resize(width, height);
+                _renderHost.Resize(width, height, dpiX, dpiY);
             }
 
             RenderImage.Source = _renderHost.ImageSource;
@@ -73,6 +85,7 @@ public partial class WaveformPanel : UserControl
 
     private void OnUnloaded(object sender, RoutedEventArgs e)
     {
+        StopNirsUiAnimation();
         UnbindViewModel();
 
         _mockEegSource?.Dispose();
@@ -94,6 +107,126 @@ public partial class WaveformPanel : UserControl
         {
             BindViewModel(e.NewValue as MainWindowViewModel);
         }
+    }
+
+    private void OnNirsUiTimerTick(object? sender, EventArgs e)
+    {
+        _nirsUiPhase += 0.26;
+        UpdateNirsUiPlaceholders();
+    }
+
+    private void StartNirsUiAnimation()
+    {
+        if (_nirsUiTimer.IsEnabled)
+        {
+            return;
+        }
+
+        UpdateNirsUiPlaceholders();
+        _nirsUiTimer.Start();
+    }
+
+    private void StopNirsUiAnimation()
+    {
+        if (_nirsUiTimer.IsEnabled)
+        {
+            _nirsUiTimer.Stop();
+        }
+    }
+
+    private void UpdateNirsUiPlaceholders()
+    {
+        RefreshNirsTrendSourceValues();
+        UpdateNirsSaturationLabels();
+        UpdateNirsTrendAreas();
+    }
+
+    private void RefreshNirsTrendSourceValues()
+    {
+        for (int i = 0; i < 4; i++)
+        {
+            if (!TryGetSourceRso2Percent(i + 1, out double value))
+            {
+                continue;
+            }
+
+            // Smoothly track right-side rSO2 values to avoid jumpy fill animation.
+            _nirsTrendValues[i] = (_nirsTrendValues[i] * 0.65) + (value * 0.35);
+        }
+    }
+
+    private void UpdateNirsSaturationLabels()
+    {
+        NirsSaturationCh1.Text = $"CH1  {GetSourceStatusTextOrDefault(1)}";
+        NirsSaturationCh2.Text = $"CH2  {GetSourceStatusTextOrDefault(2)}";
+        NirsSaturationCh3.Text = $"CH3  {GetSourceStatusTextOrDefault(3)}";
+        NirsSaturationCh4.Text = $"CH4  {GetSourceStatusTextOrDefault(4)}";
+    }
+
+    private void UpdateNirsTrendAreas()
+    {
+        NirsTrendAreaCh1.Points = BuildNirsAreaPoints(0);
+        NirsTrendAreaCh2.Points = BuildNirsAreaPoints(1);
+        NirsTrendAreaCh3.Points = BuildNirsAreaPoints(2);
+        NirsTrendAreaCh4.Points = BuildNirsAreaPoints(3);
+    }
+
+    private PointCollection BuildNirsAreaPoints(int channel)
+    {
+        const double width = 200.0;
+        const double floorY = 18.0;
+        const int steps = 24;
+
+        double value = _nirsTrendValues[channel];
+        double phase = _nirsUiPhase + _nirsPhaseOffsets[channel];
+        double center = 10.0 - ((value - 72.0) * 0.05);
+        double amp1 = 1.8 + (channel * 0.2);
+        double amp2 = 0.9 + (channel * 0.1);
+
+        var points = new PointCollection(steps + 3);
+        for (int i = 0; i <= steps; i++)
+        {
+            double t = i / (double)steps;
+            double x = width * t;
+            double y = center
+                - Math.Sin((t * 7.0) + phase) * amp1
+                - Math.Sin((t * 17.0) + (phase * 0.63)) * amp2;
+            y = Math.Clamp(y, 3.0, 16.5);
+            points.Add(new Point(x, y));
+        }
+
+        points.Add(new Point(width, floorY));
+        points.Add(new Point(0.0, floorY));
+        return points;
+    }
+
+    private bool TryGetSourceRso2Percent(int channelIndex, out double value)
+    {
+        value = 0d;
+        string status = GetSourceStatusTextOrDefault(channelIndex);
+        if (status.EndsWith("%", StringComparison.Ordinal))
+        {
+            string numericPart = status[..^1];
+            if (double.TryParse(numericPart, NumberStyles.Number, CultureInfo.InvariantCulture, out double parsed))
+            {
+                value = Math.Clamp(parsed, 0d, 100d);
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private string GetSourceStatusTextOrDefault(int channelIndex)
+    {
+        var channels = _boundViewModel?.Nirs?.Channels;
+        if (channels is null || channelIndex < 1 || channelIndex > channels.Count)
+        {
+            return "--%";
+        }
+
+        string status = channels[channelIndex - 1].StatusText;
+        return string.IsNullOrWhiteSpace(status) ? "--%" : status.Trim();
     }
 
     private void BindViewModel(MainWindowViewModel? vm)
@@ -340,9 +473,9 @@ public partial class WaveformPanel : UserControl
             _deviceLost = false;
             ErrorOverlay.Visibility = Visibility.Collapsed;
 
-            if (TryGetRenderSurfaceSize(out int width, out int height))
+            if (TryGetRenderSurfaceSize(out int width, out int height, out double dpiX, out double dpiY))
             {
-                _renderHost.Resize(width, height);
+                _renderHost.Resize(width, height, dpiX, dpiY);
                 RenderImage.Source = _renderHost.ImageSource;
             }
 
@@ -354,10 +487,15 @@ public partial class WaveformPanel : UserControl
         }
     }
 
-    private bool TryGetRenderSurfaceSize(out int width, out int height)
+    private bool TryGetRenderSurfaceSize(out int width, out int height, out double dpiX, out double dpiY)
     {
-        width = (int)RenderHostContainer.ActualWidth;
-        height = (int)RenderHostContainer.ActualHeight;
+        var dpi = VisualTreeHelper.GetDpi(RenderHostContainer);
+        dpiX = dpi.PixelsPerInchX;
+        dpiY = dpi.PixelsPerInchY;
+
+        // Render into physical pixels to avoid post-scale blur on high-DPI displays.
+        width = (int)Math.Round(RenderHostContainer.ActualWidth * dpi.DpiScaleX);
+        height = (int)Math.Round(RenderHostContainer.ActualHeight * dpi.DpiScaleY);
         return width > 0 && height > 0;
     }
 
@@ -368,14 +506,14 @@ public partial class WaveformPanel : UserControl
             return;
         }
 
-        if (!TryGetRenderSurfaceSize(out int width, out int height))
+        if (!TryGetRenderSurfaceSize(out int width, out int height, out double dpiX, out double dpiY))
         {
             return;
         }
 
         try
         {
-            _renderHost.Resize(width, height);
+            _renderHost.Resize(width, height, dpiX, dpiY);
             RenderImage.Source = _renderHost.ImageSource;
         }
         catch

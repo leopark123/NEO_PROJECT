@@ -21,8 +21,8 @@
         </Grid.RowDefinitions>
 
         <TextBlock Grid.Row="0"
-                   Text="NIRS Source"
-                   Foreground="{StaticResource NirsTrendBrush}"
+                   Text="NIRS 模式/串口"
+                   Foreground="{DynamicResource TextOnDarkBrush}"
                    FontSize="{StaticResource FontSize.Caption}"
                    FontWeight="SemiBold"/>
 
@@ -37,9 +37,9 @@
             <TextBlock Grid.Column="0"
                        Margin="0,0,6,0"
                        VerticalAlignment="Center"
-                       Foreground="{StaticResource TextDarkSecondaryBrush}"
+                       Foreground="{DynamicResource TextDarkSecondaryBrush}"
                        FontSize="{StaticResource FontSize.Caption}"
-                       Text="Mode"/>
+                       Text="模式"/>
             <ComboBox Grid.Column="1"
                       Style="{StaticResource NirsCompactComboStyle}"
                       ItemContainerStyle="{StaticResource ParamComboBoxItemStyle}"
@@ -49,7 +49,7 @@
                     Margin="6,0,0,0"
                     Padding="8,4"
                     MinWidth="58"
-                    Content="Apply"
+                    Content="应用"
                     Command="{Binding ApplySourceSwitchCommand}"
                     Style="{StaticResource DefaultButtonStyle}"/>
         </Grid>
@@ -65,9 +65,9 @@
             <TextBlock Grid.Column="0"
                        Margin="0,0,6,0"
                        VerticalAlignment="Center"
-                       Foreground="{StaticResource TextDarkSecondaryBrush}"
+                       Foreground="{DynamicResource TextDarkSecondaryBrush}"
                        FontSize="{StaticResource FontSize.Caption}"
-                       Text="Port"/>
+                       Text="串口"/>
             <ComboBox Grid.Column="1"
                       Style="{StaticResource NirsCompactComboStyle}"
                       ItemContainerStyle="{StaticResource ParamComboBoxItemStyle}"
@@ -78,7 +78,7 @@
                     Margin="6,0,0,0"
                     Padding="8,4"
                     MinWidth="58"
-                    Content="Refresh"
+                    Content="刷新"
                     Command="{Binding RefreshSerialPortsCommand}"
                     IsEnabled="{Binding IsSerialPortEditable}"
                     Style="{StaticResource DefaultButtonStyle}"/>
@@ -86,14 +86,14 @@
 
         <TextBlock Grid.Row="3"
                    Margin="0,6,0,0"
-                   Foreground="{StaticResource TextDarkTertiaryBrush}"
+                   Foreground="{DynamicResource TextDarkTertiaryBrush}"
                    FontSize="{StaticResource FontSize.Caption}"
-                   Text="Real mode needs a detected COM port."/>
+                   Text="REAL 模式需要已检测的 COM 口"/>
 
         <TextBlock Grid.Row="4"
                    Margin="0,8,0,0"
                    Text="{Binding PanelStatus}"
-                   Foreground="{StaticResource TextDarkTertiaryBrush}"
+                   Foreground="{DynamicResource TextDarkTertiaryBrush}"
                    FontSize="{StaticResource FontSize.Caption}"
                    TextWrapping="Wrap"/>
     </Grid>

@@ -1,4 +1,4 @@
-<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+﻿<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
 
     <!-- ================================================================ -->
@@ -21,7 +21,7 @@
                                 Width="{StaticResource Dim.ToggleWidth}"
                                 Height="{StaticResource Dim.ToggleHeight}"
                                 CornerRadius="{StaticResource Dim.ToggleTrackRadius}"
-                                Background="{StaticResource SurfaceDarkBrush}"
+                                Background="{DynamicResource SurfaceDarkBrush}"
                                 SnapsToDevicePixels="True"/>
                         <!-- Thumb -->
                         <Border x:Name="thumb"
@@ -45,7 +45,7 @@
                         <!-- Checked → green track, thumb slides right -->
                         <Trigger Property="IsChecked" Value="True">
                             <Setter TargetName="track" Property="Background"
-                                    Value="{StaticResource SuccessBrush}"/>
+                                    Value="{DynamicResource SuccessBrush}"/>
                             <Setter TargetName="thumb" Property="HorizontalAlignment"
                                     Value="Right"/>
                             <Setter TargetName="thumb" Property="Margin"
@@ -62,3 +62,4 @@
     </Style>
 
 </ResourceDictionary>
+

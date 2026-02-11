@@ -8,12 +8,12 @@
         </Grid.RowDefinitions>
 
         <StackPanel Grid.Row="0">
-            <TextBlock Text="NIRS Channels"
-                       Foreground="{StaticResource NirsTrendBrush}"
+            <TextBlock Text="NIRS 通道状态"
+                       Foreground="{DynamicResource TextOnDarkBrush}"
                        FontSize="{StaticResource FontSize.Caption}"
                        FontWeight="SemiBold"/>
             <TextBlock Text="rSO2: XX% / --% / Fault / Blocked"
-                       Foreground="{StaticResource TextDarkTertiaryBrush}"
+                       Foreground="{DynamicResource TextDarkTertiaryBrush}"
                        FontSize="{StaticResource FontSize.Caption}"/>
         </StackPanel>
 
@@ -24,9 +24,8 @@
             <ItemsControl ItemsSource="{Binding Channels}">
                 <ItemsControl.ItemTemplate>
                     <DataTemplate>
-                        <Grid Margin="0,1,0,1">
+                        <Grid Margin="0,2,0,2">
                             <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="Auto"/>
                                 <ColumnDefinition Width="Auto"/>
                                 <ColumnDefinition Width="*"/>
                             </Grid.ColumnDefinitions>
@@ -38,17 +37,9 @@
 
                             <TextBlock Grid.Column="1"
                                        Text="{Binding ChannelLabel}"
-                                       Foreground="{StaticResource TextOnDarkBrush}"
+                                       Foreground="{DynamicResource TextOnDarkBrush}"
                                        FontSize="{StaticResource FontSize.Caption}"
                                        Margin="6,0,6,0"
-                                       VerticalAlignment="Center"/>
-
-                            <TextBlock Grid.Column="2"
-                                       Text="{Binding StatusText}"
-                                       Foreground="{StaticResource TextDarkSecondaryBrush}"
-                                       FontFamily="{StaticResource Font.Mono}"
-                                       FontSize="{StaticResource FontSize.Caption}"
-                                       HorizontalAlignment="Right"
                                        VerticalAlignment="Center"/>
                         </Grid>
                     </DataTemplate>

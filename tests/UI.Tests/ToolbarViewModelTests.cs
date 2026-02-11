@@ -126,4 +126,23 @@ public class ToolbarViewModelTests
         Assert.True(vm.OpenVersionEntryCommand.CanExecute(null));
         vm.StopClock();
     }
+
+    [Fact]
+    public void SwitchThemeCommand_TogglesBetweenAppleAndDefaultDisplay()
+    {
+        var vm = CreateVm(out _);
+
+        Assert.Equal("Apple", vm.CurrentThemeDisplay);
+        Assert.Equal("切换 Default", vm.ThemeToggleButtonText);
+
+        vm.SwitchThemeCommand.Execute(null);
+        Assert.Equal("Default", vm.CurrentThemeDisplay);
+        Assert.Equal("切换 Apple", vm.ThemeToggleButtonText);
+
+        vm.SwitchThemeCommand.Execute(null);
+        Assert.Equal("Apple", vm.CurrentThemeDisplay);
+        Assert.Equal("切换 Default", vm.ThemeToggleButtonText);
+
+        vm.StopClock();
+    }
 }

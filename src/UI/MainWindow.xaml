@@ -8,7 +8,19 @@
         MinWidth="1024"
         MinHeight="600"
         WindowState="Maximized"
-        Background="{StaticResource BackgroundDarkBrush}">
+        Background="{DynamicResource BackgroundDarkBrush}">
+    <Window.Resources>
+        <DropShadowEffect x:Key="PanelShadowStrong"
+                          Color="{StaticResource Color.Shadow}"
+                          BlurRadius="12"
+                          ShadowDepth="3"
+                          Opacity="0.36"/>
+        <DropShadowEffect x:Key="PanelShadowSoft"
+                          Color="{StaticResource Color.Shadow}"
+                          BlurRadius="8"
+                          ShadowDepth="2"
+                          Opacity="0.24"/>
+    </Window.Resources>
 
     <DockPanel LastChildFill="True">
         <controls:ToolbarPanel DockPanel.Dock="Top"
@@ -19,44 +31,69 @@
 
         <Border x:Name="RightVideoNirsPanel"
                 DockPanel.Dock="Right"
+                Margin="8,0,0,0"
                 Width="{StaticResource Dim.RightPanelWidth}"
                 MinWidth="{StaticResource Dim.RightPanelWidth}"
-                Background="{StaticResource BackgroundBrush}"
-                BorderBrush="{StaticResource BorderBrush}"
-                BorderThickness="{StaticResource Dim.ParamBorderThickness}">
-            <Grid>
-                <controls:VideoPanel DataContext="{Binding Video}"/>
+                Background="{DynamicResource BackgroundBrush}"
+                BorderBrush="{DynamicResource DividerMajorBrush}"
+                BorderThickness="{StaticResource Dim.BorderThicknessMajor}"
+                CornerRadius="{StaticResource Dim.CornerRadiusAll}"
+                Effect="{StaticResource PanelShadowStrong}">
+            <Grid Margin="8">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="60*"/>
+                    <RowDefinition Height="40*"/>
+                </Grid.RowDefinitions>
 
-                <Grid Margin="8">
-                    <Grid.RowDefinitions>
-                        <RowDefinition Height="60*"/>
-                        <RowDefinition Height="40*"/>
-                    </Grid.RowDefinitions>
+                <Border Grid.Row="0"
+                        Background="{DynamicResource BackgroundBrush}"
+                        BorderBrush="{DynamicResource DividerMajorBrush}"
+                        BorderThickness="{StaticResource Dim.BorderThicknessNormal}"
+                        CornerRadius="{StaticResource Dim.CornerRadiusAll}"
+                        Effect="{StaticResource PanelShadowSoft}">
+                    <controls:VideoPanel DataContext="{Binding Video}"/>
+                </Border>
+
+                <Grid Grid.Row="1"
+                      Margin="0,8,0,0">
                     <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="*"/>
-                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="56*"/>
+                        <ColumnDefinition Width="44*"/>
                     </Grid.ColumnDefinitions>
 
-                    <Border Grid.Row="1"
-                            Grid.Column="0"
+                    <Border Grid.Column="0"
                             Margin="0,0,4,0"
-                            Background="{StaticResource BackgroundBrush}"
-                            BorderBrush="{StaticResource BorderBrush}"
-                            BorderThickness="{StaticResource Dim.BorderThicknessThin}"
-                            CornerRadius="{StaticResource Dim.CornerRadiusAll}">
+                            Background="{DynamicResource BackgroundBrush}"
+                            BorderBrush="{DynamicResource DividerNormalBrush}"
+                            BorderThickness="{StaticResource Dim.BorderThicknessNormal}"
+                            CornerRadius="{StaticResource Dim.CornerRadiusAll}"
+                            Effect="{StaticResource PanelShadowSoft}">
+                        <controls:NirsChannelStatusPanel DataContext="{Binding Nirs}"/>
+                    </Border>
+
+                    <Border Grid.Column="1"
+                            Margin="4,0,0,0"
+                            Background="{DynamicResource BackgroundBrush}"
+                            BorderBrush="{DynamicResource DividerNormalBrush}"
+                            BorderThickness="{StaticResource Dim.BorderThicknessNormal}"
+                            CornerRadius="{StaticResource Dim.CornerRadiusAll}"
+                            Effect="{StaticResource PanelShadowSoft}">
                         <controls:NirsSourcePanel DataContext="{Binding Nirs}"/>
                     </Border>
 
-                    <Border Grid.Row="1"
-                            Grid.Column="1"
-                            Margin="4,0,0,0"
-                            Background="{StaticResource BackgroundBrush}"
-                            BorderBrush="{StaticResource BorderBrush}"
-                            BorderThickness="{StaticResource Dim.BorderThicknessThin}"
-                            CornerRadius="{StaticResource Dim.CornerRadiusAll}">
-                        <controls:NirsChannelStatusPanel DataContext="{Binding Nirs}"/>
-                    </Border>
+                    <Rectangle Grid.ColumnSpan="2"
+                               Width="1"
+                               Fill="{DynamicResource DividerMinorBrush}"
+                               HorizontalAlignment="Center"
+                               IsHitTestVisible="False"/>
+
                 </Grid>
+
+                <Rectangle Grid.Row="1"
+                           Height="{StaticResource Dim.SeparatorMajorHeight}"
+                           Fill="{DynamicResource DividerMajorBrush}"
+                           VerticalAlignment="Top"
+                           IsHitTestVisible="False"/>
             </Grid>
         </Border>
 
@@ -73,7 +110,7 @@
             </controls:NavPanel.Style>
         </controls:NavPanel>
 
-        <Grid Background="{StaticResource BackgroundDarkBrush}">
+        <Grid Background="{DynamicResource BackgroundDarkBrush}">
             <ContentControl Content="{Binding CurrentPage}"
                             Panel.ZIndex="0"/>
 

@@ -24,12 +24,6 @@ namespace Neo.UI.Rendering;
 /// </remarks>
 public sealed class EegPreviewRenderer
 {
-    private static readonly Color4 BackgroundColor = new(1.0f, 1.0f, 1.0f, 1.0f);  // White
-    private static readonly Color4 RangeLineColor = new(0.3f, 0.3f, 0.3f, 1.0f);   // Dark gray
-    private static readonly Color4 LabelColor = new(0.4f, 0.4f, 0.4f, 1.0f);       // Gray
-    private static readonly Color4 TimeTextColor = new(0.5f, 0.5f, 0.5f, 1.0f);    // Light gray
-    private static readonly Color4 WaveformColor = new(0.0f, 0.0f, 0.0f, 1.0f);    // Black waveform
-
     public void Render(
         ID2D1DeviceContext context,
         ResourceCache resources,
@@ -40,8 +34,8 @@ public sealed class EegPreviewRenderer
         if (area.Width <= 0 || area.Height <= 0)
             return;
 
-        // Fill white background
-        var bgBrush = resources.GetSolidBrush(BackgroundColor);
+        // Fill themed background
+        var bgBrush = resources.GetSolidBrush(UiEegPalette.BackgroundColor);
         context.FillRectangle(area, bgBrush);
 
         float centerY = (float)(area.Top + area.Height / 2.0);
@@ -51,7 +45,7 @@ public sealed class EegPreviewRenderer
 
         // Draw upper range line (+rangeUv)
         float upperY = (float)(area.Top + area.Height * 0.25);
-        var lineBrush = resources.GetSolidBrush(RangeLineColor);
+        var lineBrush = resources.GetSolidBrush(UiEegPalette.RangeDividerColor);
         context.DrawLine(new Vector2(left, upperY), new Vector2(right, upperY), lineBrush, 0.5f);
 
         // Draw lower range line (-rangeUv)
@@ -65,7 +59,7 @@ public sealed class EegPreviewRenderer
         var samples = sweepData.Samples.Span;
         if (samples.Length > 0)
         {
-            var waveformBrush = resources.GetSolidBrush(WaveformColor);
+            var waveformBrush = resources.GetSolidBrush(EegColorPalette.GetChannelColor(sweepData.ChannelIndex));
             int samplesPerSweep = sweepData.SamplesPerSweep;
             float width = (float)area.Width;
 
@@ -101,7 +95,7 @@ public sealed class EegPreviewRenderer
         }
 
         // Draw range labels (with boundary checking to prevent overflow)
-        var labelBrush = resources.GetSolidBrush(LabelColor);
+        var labelBrush = resources.GetSolidBrush(UiEegPalette.RangeTextColor);
         var smallFormat = resources.GetTextFormat("Segoe UI", 8.0f);
 
         string upperLabel = $"+{rangeUv}μV";

@@ -1,4 +1,4 @@
-<UserControl x:Class="Neo.UI.Views.Controls.NavPanel"
+﻿<UserControl x:Class="Neo.UI.Views.Controls.NavPanel"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
 
@@ -9,8 +9,8 @@
     <!-- Width = 60px via Dim.NavigationWidth (src/UI/Styles/Dimensions.xaml:12, UI_SPEC §4.2) -->
 
     <Border Width="{StaticResource Dim.NavigationWidth}"
-            Background="{StaticResource BackgroundBrush}"
-            BorderBrush="{StaticResource BorderBrush}"
+            Background="{DynamicResource BackgroundBrush}"
+            BorderBrush="{DynamicResource DividerNormalBrush}"
             BorderThickness="{StaticResource Dim.NavBorderThickness}">
         <StackPanel VerticalAlignment="Top" Margin="{StaticResource Dim.NavStackMargin}">
 
@@ -18,7 +18,7 @@
             <Button Width="{StaticResource Dim.NavButtonInnerSize}" Height="{StaticResource Dim.NavButtonInnerSize}"
                     Margin="{StaticResource Dim.NavButtonMargin}"
                     BorderBrush="{StaticResource TransparentBrush}"
-                    Foreground="{StaticResource TextOnDarkBrush}"
+                    Foreground="{DynamicResource TextOnDarkBrush}"
                     ToolTip="首页"
                     Command="{Binding NavigateCommand}"
                     CommandParameter="Home">
@@ -27,7 +27,7 @@
                         <Setter Property="Background" Value="{StaticResource TransparentBrush}"/>
                         <Style.Triggers>
                             <DataTrigger Binding="{Binding ActiveRoute}" Value="Home">
-                                <Setter Property="Background" Value="{StaticResource PrimaryBrush}"/>
+                                <Setter Property="Background" Value="{DynamicResource PrimaryBrush}"/>
                             </DataTrigger>
                         </Style.Triggers>
                     </Style>
@@ -42,7 +42,7 @@
             <Button Width="{StaticResource Dim.NavButtonInnerSize}" Height="{StaticResource Dim.NavButtonInnerSize}"
                     Margin="{StaticResource Dim.NavButtonMargin}"
                     BorderBrush="{StaticResource TransparentBrush}"
-                    Foreground="{StaticResource TextOnDarkBrush}"
+                    Foreground="{DynamicResource TextOnDarkBrush}"
                     ToolTip="历史回顾"
                     Command="{Binding NavigateCommand}"
                     CommandParameter="History">
@@ -51,7 +51,7 @@
                         <Setter Property="Background" Value="{StaticResource TransparentBrush}"/>
                         <Style.Triggers>
                             <DataTrigger Binding="{Binding ActiveRoute}" Value="History">
-                                <Setter Property="Background" Value="{StaticResource PrimaryBrush}"/>
+                                <Setter Property="Background" Value="{DynamicResource PrimaryBrush}"/>
                             </DataTrigger>
                         </Style.Triggers>
                     </Style>
@@ -66,7 +66,7 @@
             <Button Width="{StaticResource Dim.NavButtonInnerSize}" Height="{StaticResource Dim.NavButtonInnerSize}"
                     Margin="{StaticResource Dim.NavButtonMargin}"
                     BorderBrush="{StaticResource TransparentBrush}"
-                    Foreground="{StaticResource TextOnDarkBrush}"
+                    Foreground="{DynamicResource TextOnDarkBrush}"
                     ToolTip="显示设置"
                     Command="{Binding ShowDisplayDialogCommand}">
                 <Button.Style>
@@ -74,7 +74,7 @@
                         <Setter Property="Background" Value="{StaticResource TransparentBrush}"/>
                         <Style.Triggers>
                             <DataTrigger Binding="{Binding ActiveRoute}" Value="Display">
-                                <Setter Property="Background" Value="{StaticResource PrimaryBrush}"/>
+                                <Setter Property="Background" Value="{DynamicResource PrimaryBrush}"/>
                             </DataTrigger>
                         </Style.Triggers>
                     </Style>
@@ -89,7 +89,7 @@
             <Button Width="{StaticResource Dim.NavButtonInnerSize}" Height="{StaticResource Dim.NavButtonInnerSize}"
                     Margin="{StaticResource Dim.NavButtonMargin}"
                     BorderBrush="{StaticResource TransparentBrush}"
-                    Foreground="{StaticResource TextOnDarkBrush}"
+                    Foreground="{DynamicResource TextOnDarkBrush}"
                     ToolTip="滤波设置"
                     Command="{Binding ShowFilterDialogCommand}">
                 <Button.Style>
@@ -97,7 +97,7 @@
                         <Setter Property="Background" Value="{StaticResource TransparentBrush}"/>
                         <Style.Triggers>
                             <DataTrigger Binding="{Binding ActiveRoute}" Value="Filter">
-                                <Setter Property="Background" Value="{StaticResource PrimaryBrush}"/>
+                                <Setter Property="Background" Value="{DynamicResource PrimaryBrush}"/>
                             </DataTrigger>
                         </Style.Triggers>
                     </Style>
@@ -112,7 +112,7 @@
             <Button Width="{StaticResource Dim.NavButtonInnerSize}" Height="{StaticResource Dim.NavButtonInnerSize}"
                     Margin="{StaticResource Dim.NavButtonMargin}"
                     BorderBrush="{StaticResource TransparentBrush}"
-                    Foreground="{StaticResource TextOnDarkBrush}"
+                    Foreground="{DynamicResource TextOnDarkBrush}"
                     ToolTip="用户管理"
                     Command="{Binding ShowUserManagementCommand}">
                 <Button.Style>
@@ -120,7 +120,7 @@
                         <Setter Property="Background" Value="{StaticResource TransparentBrush}"/>
                         <Style.Triggers>
                             <DataTrigger Binding="{Binding ActiveRoute}" Value="User">
-                                <Setter Property="Background" Value="{StaticResource PrimaryBrush}"/>
+                                <Setter Property="Background" Value="{DynamicResource PrimaryBrush}"/>
                             </DataTrigger>
                         </Style.Triggers>
                     </Style>
@@ -135,7 +135,7 @@
             <Button Width="{StaticResource Dim.NavButtonInnerSize}" Height="{StaticResource Dim.NavButtonInnerSize}"
                     Margin="{StaticResource Dim.NavButtonMargin}"
                     BorderBrush="{StaticResource TransparentBrush}"
-                    Foreground="{StaticResource TextOnDarkBrush}"
+                    Foreground="{DynamicResource TextOnDarkBrush}"
                     ToolTip="数据导出"
                     Command="{Binding NavigateCommand}"
                     CommandParameter="Export">
@@ -144,7 +144,7 @@
                         <Setter Property="Background" Value="{StaticResource TransparentBrush}"/>
                         <Style.Triggers>
                             <DataTrigger Binding="{Binding ActiveRoute}" Value="Export">
-                                <Setter Property="Background" Value="{StaticResource PrimaryBrush}"/>
+                                <Setter Property="Background" Value="{DynamicResource PrimaryBrush}"/>
                             </DataTrigger>
                         </Style.Triggers>
                     </Style>
@@ -159,7 +159,7 @@
             <Button Width="{StaticResource Dim.NavButtonInnerSize}" Height="{StaticResource Dim.NavButtonInnerSize}"
                     Margin="{StaticResource Dim.NavButtonMargin}"
                     BorderBrush="{StaticResource TransparentBrush}"
-                    Foreground="{StaticResource ErrorBrush}"
+                    Foreground="{DynamicResource ErrorBrush}"
                     ToolTip="关机"
                     Command="{Binding RequestShutdownCommand}">
                 <Button.Style>
@@ -167,7 +167,7 @@
                         <Setter Property="Background" Value="{StaticResource TransparentBrush}"/>
                         <Style.Triggers>
                             <DataTrigger Binding="{Binding ActiveRoute}" Value="Shutdown">
-                                <Setter Property="Background" Value="{StaticResource ErrorBrush}"/>
+                                <Setter Property="Background" Value="{DynamicResource ErrorBrush}"/>
                             </DataTrigger>
                         </Style.Triggers>
                     </Style>
@@ -182,3 +182,4 @@
     </Border>
 
 </UserControl>
+

@@ -1,4 +1,4 @@
-<UserControl x:Class="Neo.UI.Views.Controls.NirsPanel"
+﻿<UserControl x:Class="Neo.UI.Views.Controls.NirsPanel"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
     <UserControl.Resources>
@@ -10,8 +10,8 @@
     </UserControl.Resources>
 
     <Border Margin="0"
-            Background="{StaticResource BackgroundDarkBrush}"
-            BorderBrush="{StaticResource BorderBrush}"
+            Background="{DynamicResource BackgroundDarkBrush}"
+            BorderBrush="{DynamicResource BorderBrush}"
             BorderThickness="{StaticResource Dim.BorderThicknessThin}"
             CornerRadius="{StaticResource Dim.CornerRadiusAll}">
         <ScrollViewer VerticalScrollBarVisibility="Auto"
@@ -26,11 +26,11 @@
 
                 <StackPanel Grid.Row="0">
                     <TextBlock Text="NIRS Channels"
-                               Foreground="{StaticResource NirsTrendBrush}"
+                               Foreground="{DynamicResource NirsTrendBrush}"
                                FontSize="{StaticResource FontSize.Caption}"
                                FontWeight="SemiBold"/>
                     <TextBlock Text="rSO2: XX% / --% / Fault / Blocked"
-                               Foreground="{StaticResource TextDarkTertiaryBrush}"
+                               Foreground="{DynamicResource TextDarkTertiaryBrush}"
                                FontSize="{StaticResource FontSize.Caption}"/>
                 </StackPanel>
 
@@ -51,7 +51,7 @@
                                Grid.Column="0"
                                Margin="0,0,6,0"
                                VerticalAlignment="Center"
-                               Foreground="{StaticResource TextDarkSecondaryBrush}"
+                               Foreground="{DynamicResource TextDarkSecondaryBrush}"
                                FontSize="{StaticResource FontSize.Caption}"
                                Text="Mode"/>
                     <ComboBox Grid.Row="0"
@@ -73,7 +73,7 @@
                                Grid.Column="0"
                                Margin="0,6,6,0"
                                VerticalAlignment="Center"
-                               Foreground="{StaticResource TextDarkSecondaryBrush}"
+                               Foreground="{DynamicResource TextDarkSecondaryBrush}"
                                FontSize="{StaticResource FontSize.Caption}"
                                Text="Port"/>
                     <ComboBox Grid.Row="1"
@@ -97,7 +97,7 @@
                     <TextBlock Grid.Row="2"
                                Grid.Column="1"
                                Margin="0,4,0,0"
-                               Foreground="{StaticResource TextDarkTertiaryBrush}"
+                               Foreground="{DynamicResource TextDarkTertiaryBrush}"
                                FontSize="{StaticResource FontSize.Caption}"
                                Text="Real mode: select detected COM port"/>
                 </Grid>
@@ -120,14 +120,14 @@
 
                                 <TextBlock Grid.Column="1"
                                            Text="{Binding ChannelLabel}"
-                                           Foreground="{StaticResource TextOnDarkBrush}"
+                                           Foreground="{DynamicResource TextOnDarkBrush}"
                                            FontSize="{StaticResource FontSize.Caption}"
                                            Margin="6,0,6,0"
                                            VerticalAlignment="Center"/>
 
                                 <TextBlock Grid.Column="2"
                                            Text="{Binding StatusText}"
-                                           Foreground="{StaticResource TextDarkSecondaryBrush}"
+                                           Foreground="{DynamicResource TextDarkSecondaryBrush}"
                                            FontFamily="{StaticResource Font.Mono}"
                                            FontSize="{StaticResource FontSize.Caption}"
                                            HorizontalAlignment="Right"
@@ -140,9 +140,10 @@
                 <TextBlock Grid.Row="3"
                            Margin="0,4,0,0"
                            Text="{Binding PanelStatus}"
-                           Foreground="{StaticResource TextDarkTertiaryBrush}"
+                           Foreground="{DynamicResource TextDarkTertiaryBrush}"
                            FontSize="{StaticResource FontSize.Caption}"/>
             </Grid>
         </ScrollViewer>
     </Border>
 </UserControl>
+

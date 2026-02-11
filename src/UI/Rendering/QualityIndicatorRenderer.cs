@@ -53,7 +53,26 @@ public sealed class QualityIndicatorRenderer
         context.FillRectangle(area, overlayBrush);
 
         var textFormat = resources.SmallTextFormat;
-        var textBrush = resources.WhiteBrush;
+        var textColor = GetThemeTextColorOrDefault(new Color4(1.0f, 1.0f, 1.0f, 1.0f));
+        var textBrush = resources.GetSolidBrush(textColor);
         context.DrawText(label, textFormat, area, textBrush);
+    }
+
+    private static Color4 GetThemeTextColorOrDefault(Color4 fallback)
+    {
+        try
+        {
+            if (System.Windows.Application.Current?.Resources["TextOnDarkBrush"] is System.Windows.Media.SolidColorBrush brush)
+            {
+                var c = brush.Color;
+                return new Color4(c.ScR, c.ScG, c.ScB, c.ScA);
+            }
+        }
+        catch
+        {
+            // Keep fallback if theme resources are unavailable.
+        }
+
+        return fallback;
     }
 }

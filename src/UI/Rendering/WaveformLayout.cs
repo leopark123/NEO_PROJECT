@@ -1,12 +1,12 @@
 // WaveformLayout.cs
 // Phase 3: Defines the 5-region layout for waveform rendering.
 //
-// Regions (based on reference design):
-// 1) aEEG Ch1 - 25%
-// 2) EEG Preview Ch1 - 5% (narrow strip showing ±range lines)
-// 3) aEEG Ch2 - 25%
-// 4) EEG Preview Ch2 - 5% (narrow strip showing ±range lines)
-// 5) NIRS trend - 40%
+// Regions (AEEG/EEG composite panel):
+// 1) aEEG Ch1
+// 2) EEG Preview Ch1 (narrow strip showing ±range lines)
+// 3) aEEG Ch2
+// 4) EEG Preview Ch2 (narrow strip showing ±range lines)
+// 5) NIRS trend (kept for compatibility, currently 0%)
 
 using Vortice.Mathematics;
 
@@ -25,12 +25,13 @@ public readonly struct WaveformLayout
         // Add top padding to prevent 200μV label from appearing too close to toolbar
         const float topPadding = 8f;
 
-        // Ratios based on reference design:
-        // aEEG1: 25% + EEG Preview1: 5% + aEEG2: 25% + EEG Preview2: 5% + NIRS: 40%
+        // Composite panel now focuses on aEEG/EEG lanes only.
+        // NIRS is displayed in a dedicated lower panel in WaveformPanel.xaml.
+        // Keep compatibility field, but set NIRS ratio to 0 here.
         float total = 100f;
-        float aeeg = 25f;
-        float eegPreview = 5f;
-        float nirs = 40f;
+        float aeeg = 37f;
+        float eegPreview = 13f;
+        float nirs = 0f;
 
         float availableHeight = Math.Max(0f, height - topPadding);
         float y = topPadding;  // Start from topPadding instead of 0

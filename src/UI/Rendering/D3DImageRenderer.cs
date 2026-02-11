@@ -48,6 +48,8 @@ public sealed class D3DImageRenderer : IDisposable
     // ── State ──
     private int _width;
     private int _height;
+    private float _dpiX = 96f;
+    private float _dpiY = 96f;
     private bool _isRendering;
     private bool _disposed;
 
@@ -62,6 +64,12 @@ public sealed class D3DImageRenderer : IDisposable
 
     /// <summary>Current back buffer height in pixels.</summary>
     public int Height => _height;
+
+    /// <summary>Current render target DPI X.</summary>
+    public float DpiX => _dpiX;
+
+    /// <summary>Current render target DPI Y.</summary>
+    public float DpiY => _dpiY;
 
     /// <summary>True if device was successfully initialized.</summary>
     public bool IsDeviceReady => _device != null && _d2dFactory != null && _d2dDevice != null;
@@ -118,14 +126,20 @@ public sealed class D3DImageRenderer : IDisposable
     /// WriteableBitmap for the given size.
     /// Safe to call multiple times; releases old resources before creating new ones.
     /// </summary>
-    public void Resize(int width, int height)
+    public void Resize(int width, int height, double dpiX = 96.0, double dpiY = 96.0)
     {
         if (_disposed) return;
         if (width <= 0 || height <= 0) return;
-        if (_width == width && _height == height) return;
+        float nextDpiX = Math.Max(96f, (float)dpiX);
+        float nextDpiY = Math.Max(96f, (float)dpiY);
+        if (_width == width && _height == height &&
+            Math.Abs(_dpiX - nextDpiX) < 0.01f &&
+            Math.Abs(_dpiY - nextDpiY) < 0.01f) return;
 
         _width = width;
         _height = height;
+        _dpiX = nextDpiX;
+        _dpiY = nextDpiY;
 
         // Release old render resources (not devices)
         ReleaseRenderResources();
@@ -165,16 +179,19 @@ public sealed class D3DImageRenderer : IDisposable
         using var dxgiSurface = _renderTexture.QueryInterface<IDXGISurface>();
         var bitmapProps = new BitmapProperties1(
             new Vortice.DCommon.PixelFormat(Format.B8G8R8A8_UNorm, Vortice.DCommon.AlphaMode.Premultiplied),
-            96f, 96f,
+            _dpiX, _dpiY,
             BitmapOptions.Target | BitmapOptions.CannotDraw);
         _d2dBitmap = _d2dContext.CreateBitmapFromDxgiSurface(dxgiSurface, bitmapProps);
         _d2dContext.Target = _d2dBitmap;
+        // Improve text legibility for axis labels and scale annotations.
+        _d2dContext.AntialiasMode = AntialiasMode.PerPrimitive;
+        _d2dContext.TextAntialiasMode = TextAntialiasMode.Cleartype;
 
         // 5. Create reusable brushes (NOT per-frame — CHARTER R-03)
         CreateBrushes();
 
         // 6. Create WriteableBitmap (WPF-side pixel buffer)
-        _writeableBitmap = new WriteableBitmap(width, height, 96, 96, PixelFormats.Bgra32, null);
+        _writeableBitmap = new WriteableBitmap(width, height, _dpiX, _dpiY, PixelFormats.Bgra32, null);
     }
 
     // ═══════════════════════════════════════════════════════════════════

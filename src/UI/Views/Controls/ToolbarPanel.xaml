@@ -1,10 +1,44 @@
-<UserControl x:Class="Neo.UI.Views.Controls.ToolbarPanel"
+﻿<UserControl x:Class="Neo.UI.Views.Controls.ToolbarPanel"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <UserControl.Resources>
+        <DrawingImage x:Key="ThemeSunIcon">
+            <DrawingImage.Drawing>
+                <DrawingGroup>
+                    <GeometryDrawing Brush="{DynamicResource TextOnDarkBrush}">
+                        <GeometryDrawing.Geometry>
+                            <GeometryGroup>
+                                <EllipseGeometry Center="8,8" RadiusX="3.2" RadiusY="3.2"/>
+                                <RectangleGeometry Rect="7.5,1,1,2"/>
+                                <RectangleGeometry Rect="7.5,13,1,2"/>
+                                <RectangleGeometry Rect="1,7.5,2,1"/>
+                                <RectangleGeometry Rect="13,7.5,2,1"/>
+                                <RectangleGeometry Rect="3,3,1.4,1.4"/>
+                                <RectangleGeometry Rect="11.6,11.6,1.4,1.4"/>
+                                <RectangleGeometry Rect="3,11.6,1.4,1.4"/>
+                                <RectangleGeometry Rect="11.6,3,1.4,1.4"/>
+                            </GeometryGroup>
+                        </GeometryDrawing.Geometry>
+                    </GeometryDrawing>
+                </DrawingGroup>
+            </DrawingImage.Drawing>
+        </DrawingImage>
+        <DrawingImage x:Key="ThemeMoonIcon">
+            <DrawingImage.Drawing>
+                <DrawingGroup>
+                    <GeometryDrawing Brush="{DynamicResource TextOnDarkBrush}">
+                        <GeometryDrawing.Geometry>
+                            <PathGeometry Figures="M 10.2,1.8 C 7.4,2.0 4.8,4.4 4.4,7.5 3.9,11.0 6.2,14.1 9.4,14.8 11.5,15.3 13.5,14.8 15.0,13.5 12.4,13.3 10.0,11.4 9.2,8.7 8.5,6.0 9.0,3.5 10.2,1.8 Z"/>
+                        </GeometryDrawing.Geometry>
+                    </GeometryDrawing>
+                </DrawingGroup>
+            </DrawingImage.Drawing>
+        </DrawingImage>
+    </UserControl.Resources>
 
     <Border Height="{StaticResource Dim.ToolbarHeight}"
-            Background="{StaticResource BackgroundBrush}"
-            BorderBrush="{StaticResource BorderBrush}"
+            Background="{DynamicResource BackgroundBrush}"
+            BorderBrush="{DynamicResource DividerNormalBrush}"
             BorderThickness="{StaticResource Dim.ToolbarBorderThickness}">
         <Grid Margin="{StaticResource Dim.StatusBarGridMargin}">
             <Grid.ColumnDefinitions>
@@ -31,25 +65,25 @@
                         Margin="{StaticResource Dim.LogoAreaMargin}">
                 <Border Width="{StaticResource Dim.LogoSize}"
                         Height="{StaticResource Dim.LogoSize}"
-                        Background="{StaticResource PrimaryBrush}"
+                        Background="{DynamicResource PrimaryBrush}"
                         CornerRadius="{StaticResource Dim.CornerRadiusAll}"
                         Margin="{StaticResource Dim.LogoBoxMargin}">
                     <TextBlock Text="N"
-                               Foreground="{StaticResource TextOnDarkBrush}"
+                               Foreground="{DynamicResource TextOnDarkBrush}"
                                FontSize="{StaticResource FontSize.Subtitle}"
                                FontWeight="Bold"
                                HorizontalAlignment="Center"
                                VerticalAlignment="Center"/>
                 </Border>
                 <TextBlock Text="NEO"
-                           Foreground="{StaticResource TextOnDarkBrush}"
+                           Foreground="{DynamicResource TextOnDarkBrush}"
                            FontSize="{StaticResource FontSize.MonoValue}"
                            VerticalAlignment="Center"/>
                 <Button Margin="{StaticResource Dim.ButtonSpacingMargin}"
                         Padding="{StaticResource Dim.DefaultButtonPadding}"
-                        Background="{StaticResource BorderBrush}"
-                        Foreground="{StaticResource TextOnDarkBrush}"
-                        BorderBrush="{StaticResource BorderDarkBrush}"
+                        Background="{DynamicResource BorderBrush}"
+                        Foreground="{DynamicResource TextOnDarkBrush}"
+                        BorderBrush="{DynamicResource BorderDarkBrush}"
                         BorderThickness="{StaticResource Dim.ToolbarButtonBorderThickness}"
                         Command="{Binding OpenVersionEntryCommand}"
                         Content="{Binding AppVersion}"/>
@@ -57,18 +91,21 @@
 
             <Border Grid.Column="2"
                     Margin="{StaticResource Dim.SeekBarMargin}"
-                    Background="{StaticResource BorderBrush}"
+                    Background="{DynamicResource PrimaryBrush}"
                     CornerRadius="{StaticResource Dim.CornerRadiusSmallAll}"
                     VerticalAlignment="Center">
                 <Grid Margin="{StaticResource Dim.InputPadding}">
-                    <Border Height="{StaticResource Dim.SeparatorHeight}"
-                            Background="{StaticResource EegChannel1Brush}"
-                            VerticalAlignment="Center"/>
-                    <TextBlock Text="Monitoring"
-                               Foreground="{StaticResource TextOnDarkBrush}"
+                    <TextBlock Text="历史回顾"
+                               Foreground="{DynamicResource TextOnDarkBrush}"
                                FontSize="{StaticResource FontSize.Small}"
-                               HorizontalAlignment="Center"
-                               VerticalAlignment="Top"/>
+                               HorizontalAlignment="Left"
+                               VerticalAlignment="Center"/>
+                    <TextBlock Text="TODO(UI Placeholder)"
+                               Foreground="{DynamicResource TextOnDarkBrush}"
+                               Opacity="0.82"
+                               FontSize="{StaticResource FontSize.Caption}"
+                               HorizontalAlignment="Right"
+                               VerticalAlignment="Center"/>
                 </Grid>
             </Border>
 
@@ -78,11 +115,11 @@
                 <Button.Style>
                     <Style TargetType="Button" BasedOn="{StaticResource ToolbarButtonStyle}">
                         <Setter Property="Content" Value="Play"/>
-                        <Setter Property="Background" Value="{StaticResource BorderBrush}"/>
+                        <Setter Property="Background" Value="{DynamicResource BorderBrush}"/>
                         <Style.Triggers>
                             <DataTrigger Binding="{Binding IsPlaying}" Value="True">
                                 <Setter Property="Content" Value="Pause"/>
-                                <Setter Property="Background" Value="{StaticResource PrimaryBrush}"/>
+                                <Setter Property="Background" Value="{DynamicResource PrimaryBrush}"/>
                             </DataTrigger>
                         </Style.Triggers>
                     </Style>
@@ -95,11 +132,11 @@
                 <Button.Style>
                     <Style TargetType="Button" BasedOn="{StaticResource ToolbarButtonStyle}">
                         <Setter Property="Content" Value="Pin"/>
-                        <Setter Property="Background" Value="{StaticResource BorderBrush}"/>
+                        <Setter Property="Background" Value="{DynamicResource BorderBrush}"/>
                         <Style.Triggers>
                             <DataTrigger Binding="{Binding IsPinned}" Value="True">
                                 <Setter Property="Content" Value="Pinned"/>
-                                <Setter Property="Background" Value="{StaticResource PrimaryBrush}"/>
+                                <Setter Property="Background" Value="{DynamicResource PrimaryBrush}"/>
                             </DataTrigger>
                         </Style.Triggers>
                     </Style>
@@ -109,21 +146,41 @@
             <Button Grid.Column="5"
                     Margin="{StaticResource Dim.ButtonSpacingMargin}"
                     Command="{Binding SwitchThemeCommand}"
-                    ToolTip="Switch Theme"
+                    ToolTip="切换主题（Default / Apple）"
                     Cursor="Hand">
                 <Button.Style>
                     <Style TargetType="Button" BasedOn="{StaticResource ToolbarButtonStyle}">
-                        <Setter Property="Width" Value="Auto"/>
-                        <Setter Property="MinWidth" Value="80"/>
-                        <Setter Property="Padding" Value="12,0"/>
-                        <Setter Property="Content" Value="{Binding CurrentThemeName}"/>
+                        <Setter Property="Width" Value="{StaticResource Dim.NavButtonSize}"/>
+                        <Setter Property="MinWidth" Value="{StaticResource Dim.NavButtonSize}"/>
+                        <Setter Property="Padding" Value="0"/>
+                        <Setter Property="Background" Value="{DynamicResource BorderBrush}"/>
+                        <Setter Property="Content">
+                            <Setter.Value>
+                                <Image Width="16"
+                                       Height="16"
+                                       Source="{StaticResource ThemeMoonIcon}"
+                                       Stretch="Uniform"/>
+                            </Setter.Value>
+                        </Setter>
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding CurrentThemeName}" Value="Apple">
+                                <Setter Property="Content">
+                                    <Setter.Value>
+                                        <Image Width="16"
+                                               Height="16"
+                                               Source="{StaticResource ThemeSunIcon}"
+                                               Stretch="Uniform"/>
+                                    </Setter.Value>
+                                </Setter>
+                            </DataTrigger>
+                        </Style.Triggers>
                     </Style>
                 </Button.Style>
             </Button>
 
             <TextBlock Grid.Column="6"
                        Text="{Binding CurrentTime}"
-                       Foreground="{StaticResource TextDarkSecondaryBrush}"
+                       Foreground="{DynamicResource TextDarkSecondaryBrush}"
                        FontFamily="{StaticResource Font.Mono}"
                        FontSize="{StaticResource FontSize.Body}"
                        VerticalAlignment="Center"
@@ -131,7 +188,7 @@
 
             <TextBlock Grid.Column="7"
                        Text="{Binding CurrentUser}"
-                       Foreground="{StaticResource TextDarkSecondaryBrush}"
+                       Foreground="{DynamicResource TextDarkSecondaryBrush}"
                        FontSize="{StaticResource FontSize.Small}"
                        VerticalAlignment="Center"
                        Margin="{StaticResource Dim.ToolbarUserMargin}"/>
@@ -145,10 +202,10 @@
                          Style="{StaticResource NeoTextBoxStyle}"
                          Text="{Binding BedNumber, UpdateSourceTrigger=PropertyChanged}"/>
                 <Border Padding="{StaticResource Dim.BedBorderPadding}"
-                        Background="{StaticResource PrimaryBrush}"
+                        Background="{DynamicResource PrimaryBrush}"
                         CornerRadius="{StaticResource Dim.CornerRadiusSmallAll}">
                     <TextBlock Text="{Binding BedNumberDisplay}"
-                               Foreground="{StaticResource TextOnDarkBrush}"
+                               Foreground="{DynamicResource TextOnDarkBrush}"
                                FontSize="{StaticResource FontSize.Small}"
                                FontWeight="SemiBold"/>
                 </Border>

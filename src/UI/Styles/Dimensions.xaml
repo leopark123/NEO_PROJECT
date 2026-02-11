@@ -11,7 +11,7 @@
     <sys:Double x:Key="Dim.ToolbarHeight">60</sys:Double>
     <sys:Double x:Key="Dim.NavigationWidth">60</sys:Double>
     <sys:Double x:Key="Dim.StatusBarHeight">30</sys:Double>
-    <sys:Double x:Key="Dim.RightPanelWidth">400</sys:Double>
+    <sys:Double x:Key="Dim.RightPanelWidth">500</sys:Double>
     <sys:Double x:Key="Dim.DialogSmallWidth">400</sys:Double>
     <sys:Double x:Key="Dim.DialogSmallHeight">260</sys:Double>
     <sys:Double x:Key="Dim.DialogMediumWidth">640</sys:Double>
@@ -104,7 +104,10 @@
 
     <!-- ── Scalar sizes (Apple-style shadows) ── -->
     <sys:Double x:Key="Dim.SeparatorHeight">0.5</sys:Double>
+    <sys:Double x:Key="Dim.SeparatorMajorHeight">1.5</sys:Double>
     <Thickness x:Key="Dim.BorderThicknessThin">0.5</Thickness>
+    <Thickness x:Key="Dim.BorderThicknessNormal">1</Thickness>
+    <Thickness x:Key="Dim.BorderThicknessMajor">1.5</Thickness>
     <sys:Double x:Key="Dim.BorderThicknessFocus">3</sys:Double>
     <sys:Double x:Key="Dim.ShadowDepth">2</sys:Double>
     <sys:Double x:Key="Dim.ShadowBlurRadius">8</sys:Double>

@@ -42,12 +42,19 @@
     <!-- 1.6 Shadow / Effect -->
     <Color x:Key="Color.Shadow">#000000</Color>
 
+    <!-- 1.6.1 Layout dividers -->
+    <Color x:Key="Color.DividerMajor">#7FAECF</Color>
+    <Color x:Key="Color.DividerNormal">#5A6B7A</Color>
+    <Color x:Key="Color.DividerMinor">#3E4C58</Color>
+
     <!-- 1.7 Dark-theme UI accents - Apple refined grays -->
     <Color x:Key="Color.BorderDark">#48484A</Color>
     <Color x:Key="Color.HoverDark">#3A3A3C</Color>
     <Color x:Key="Color.BorderSubtle">#2C2C2E</Color>
     <Color x:Key="Color.BackgroundAlt">#1C1C1E</Color>
     <Color x:Key="Color.DeviceInactive">#8E8E93</Color>
+    <Color x:Key="Color.PanelHighlight">#66FFFFFF</Color>
+    <Color x:Key="Color.PanelShadow">#46000000</Color>
 
     <!-- 1.7 Text - Apple typography colors -->
     <Color x:Key="Color.TextPrimary">#000000</Color>
@@ -101,6 +108,13 @@
     <SolidColorBrush x:Key="BorderSubtleBrush" Color="{StaticResource Color.BorderSubtle}"/>
     <SolidColorBrush x:Key="BackgroundAltBrush" Color="{StaticResource Color.BackgroundAlt}"/>
     <SolidColorBrush x:Key="DeviceInactiveBrush" Color="{StaticResource Color.DeviceInactive}"/>
+    <SolidColorBrush x:Key="PanelHighlightBrush" Color="{StaticResource Color.PanelHighlight}"/>
+    <SolidColorBrush x:Key="PanelShadowBrush" Color="{StaticResource Color.PanelShadow}"/>
+
+    <!-- 2.6.1 Divider brushes -->
+    <SolidColorBrush x:Key="DividerMajorBrush" Color="{StaticResource Color.DividerMajor}"/>
+    <SolidColorBrush x:Key="DividerNormalBrush" Color="{StaticResource Color.DividerNormal}"/>
+    <SolidColorBrush x:Key="DividerMinorBrush" Color="{StaticResource Color.DividerMinor}"/>
 
     <!-- 2.7 Input/semantic brushes -->
     <SolidColorBrush x:Key="InputBackgroundBrush" Color="White"/>

@@ -69,7 +69,7 @@ public sealed class SeekBarRenderer
     {
         long durationUs = Math.Max(1, totalDurationUs);
         var tickBrush = resources.GetSolidBrush(TickColor);
-        var labelBrush = resources.GetSolidBrush(LabelColor);
+        var labelBrush = resources.GetSolidBrush(GetThemeTextColorOrDefault(LabelColor));
         var textFormat = resources.GetTextFormat("Segoe UI", 8.5f);
 
         long majorIntervalUs = 60L * 60 * 1_000_000;      // 1h
@@ -109,11 +109,29 @@ public sealed class SeekBarRenderer
         in Rect area,
         long currentTimestampUs)
     {
-        var labelBrush = resources.GetSolidBrush(LabelColor);
+        var labelBrush = resources.GetSolidBrush(GetThemeTextColorOrDefault(LabelColor));
         var textFormat = resources.GetTextFormat("Segoe UI", 8.5f);
         string label = FormatTimestamp(currentTimestampUs);
         var labelRect = new Rect(area.Right - 60, area.Top + 2, 56, 12);
         context.DrawText(label, textFormat, labelRect, labelBrush);
+    }
+
+    private static Color4 GetThemeTextColorOrDefault(Color4 fallback)
+    {
+        try
+        {
+            if (System.Windows.Application.Current?.Resources["TextOnDarkBrush"] is System.Windows.Media.SolidColorBrush brush)
+            {
+                var c = brush.Color;
+                return new Color4(c.ScR, c.ScG, c.ScB, c.ScA);
+            }
+        }
+        catch
+        {
+            // Fallback keeps previous behavior when resources are unavailable.
+        }
+
+        return fallback;
     }
 
     private static string FormatTimestamp(long timestampUs)

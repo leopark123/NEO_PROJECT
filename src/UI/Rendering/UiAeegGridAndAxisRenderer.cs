@@ -39,13 +39,14 @@ public sealed class UiAeegGridAndAxisRenderer
         var labelBrush = resources.GetSolidBrush(UiAeegPalette.AxisLabel);
         var backgroundBrush = resources.GetSolidBrush(UiAeegPalette.Background);
 
-        var textFormat = resources.GetTextFormat("Segoe UI", 10.0f);
+        var textFormat = resources.GetTextFormat("Segoe UI", 14.0f);
 
         context.FillRectangle(renderArea, backgroundBrush);
 
         foreach (var tick in _cachedTicks!)
         {
             float y = (float)(renderArea.Top + tick.Y);
+            float yAligned = MathF.Round(y);
             if (y < renderArea.Top || y > renderArea.Bottom)
                 continue;
 
@@ -71,19 +72,34 @@ public sealed class UiAeegGridAndAxisRenderer
             }
 
             context.DrawLine(
-                new Vector2((float)renderArea.Left, y),
-                new Vector2((float)renderArea.Right, y),
+                new Vector2((float)renderArea.Left, yAligned),
+                new Vector2((float)renderArea.Right, yAligned),
                 lineBrush,
                 lineWidth);
 
             if (showLabels && (tick.IsMajor || tick.VoltageUv == 25))
             {
+                float labelHeight = 24f;
+                float labelTop = TryGetEvenlyDistributedLabelTop(
+                    tick.VoltageUv,
+                    renderArea,
+                    labelHeight,
+                    out float evenTop)
+                    ? evenTop
+                    : MathF.Round(Math.Clamp(
+                        yAligned - labelHeight * 0.5f,
+                        (float)renderArea.Top + 4f,
+                        (float)renderArea.Bottom - labelHeight - 2f));
+                float labelLeft = MathF.Round((float)renderArea.Left + labelMargin + 1f);
+                float labelWidth = MathF.Max(42f, (float)renderArea.Width - labelMargin - 4f);
                 var labelRect = new Rect(
-                    renderArea.Left + labelMargin,
-                    y - 7,
-                    60,
-                    14);
+                    labelLeft,
+                    labelTop,
+                    labelWidth,
+                    labelHeight);
 
+                // Mask grid lines under labels to improve legibility.
+                context.FillRectangle(labelRect, backgroundBrush);
                 context.DrawText(
                     tick.Label,
                     textFormat,
@@ -153,5 +169,43 @@ public sealed class UiAeegGridAndAxisRenderer
     {
         _mapper = null;
         _cachedTicks = null;
+    }
+
+    private static bool TryGetEvenlyDistributedLabelTop(
+        double voltageUv,
+        Rect renderArea,
+        float labelHeight,
+        out float labelTop)
+    {
+        // Keep the major displayed labels roughly evenly spaced for readability:
+        // 0, 5, 10, 25, 50, 100, 200.
+        ReadOnlySpan<double> order = [200d, 100d, 50d, 25d, 10d, 5d, 0d];
+        const double epsilon = 0.01;
+        int index = -1;
+        for (int i = 0; i < order.Length; i++)
+        {
+            if (Math.Abs(order[i] - voltageUv) < epsilon)
+            {
+                index = i;
+                break;
+            }
+        }
+
+        if (index < 0)
+        {
+            labelTop = 0f;
+            return false;
+        }
+
+        float topInset = 8f;
+        float bottomInset = 8f;
+        float usableHeight = MathF.Max(1f, (float)renderArea.Height - topInset - bottomInset);
+        float step = usableHeight / MathF.Max(1, order.Length - 1);
+        float centerY = (float)renderArea.Top + topInset + step * index;
+        labelTop = MathF.Round(Math.Clamp(
+            centerY - labelHeight * 0.5f,
+            (float)renderArea.Top + 4f,
+            (float)renderArea.Bottom - labelHeight - 2f));
+        return true;
     }
 }

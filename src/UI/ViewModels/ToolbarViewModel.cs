@@ -36,7 +36,11 @@ public partial class ToolbarViewModel : ViewModelBase
     private string _appVersion = GetVersionText();
 
     [ObservableProperty]
-    private string _currentThemeName = "Apple";
+    private string _currentThemeName = "Medical";
+
+    public string CurrentThemeDisplay => CurrentThemeName == ThemeType.Apple.ToString() ? "Apple" : "Default";
+
+    public string ThemeToggleButtonText => CurrentThemeName == ThemeType.Apple.ToString() ? "切换 Default" : "切换 Apple";
 
     public string BedNumberDisplay => $"Bed: {BedNumber}";
 
@@ -66,6 +70,13 @@ public partial class ToolbarViewModel : ViewModelBase
     partial void OnBedNumberChanged(string value)
     {
         OnPropertyChanged(nameof(BedNumberDisplay));
+    }
+
+    partial void OnCurrentThemeNameChanged(string value)
+    {
+        _ = value;
+        OnPropertyChanged(nameof(CurrentThemeDisplay));
+        OnPropertyChanged(nameof(ThemeToggleButtonText));
     }
 
     [RelayCommand]
@@ -114,20 +125,35 @@ public partial class ToolbarViewModel : ViewModelBase
     [RelayCommand]
     private void SwitchTheme()
     {
-        System.Diagnostics.Debug.WriteLine($"[SwitchTheme] Current theme: {_themeService.CurrentTheme}");
-
         var newTheme = _themeService.CurrentTheme == ThemeType.Apple
             ? ThemeType.Medical
             : ThemeType.Apple;
+        ApplyThemeInternal(newTheme);
+    }
 
-        System.Diagnostics.Debug.WriteLine($"[SwitchTheme] Switching to: {newTheme}");
+    [RelayCommand]
+    private void ApplyAppleTheme()
+    {
+        ApplyThemeInternal(ThemeType.Apple);
+    }
 
-        _themeService.SwitchTheme(newTheme);
-        CurrentThemeName = newTheme.ToString();
+    [RelayCommand]
+    private void ApplyMedicalTheme()
+    {
+        ApplyThemeInternal(ThemeType.Medical);
+    }
 
-        System.Diagnostics.Debug.WriteLine($"[SwitchTheme] Theme switched, new name: {CurrentThemeName}");
+    private void ApplyThemeInternal(ThemeType targetTheme)
+    {
+        if (_themeService.CurrentTheme == targetTheme)
+        {
+            CurrentThemeName = targetTheme.ToString();
+            return;
+        }
 
-        _audit.Log(AuditEventTypes.ConfigChange, $"Theme switched to {newTheme}");
+        _themeService.SwitchTheme(targetTheme);
+        CurrentThemeName = targetTheme.ToString();
+        _audit.Log(AuditEventTypes.ConfigChange, $"Theme switched to {(targetTheme == ThemeType.Apple ? "Apple" : "Default")}");
     }
 
     private static string GetVersionText()

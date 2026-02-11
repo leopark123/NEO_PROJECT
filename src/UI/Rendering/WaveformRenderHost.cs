@@ -19,6 +19,7 @@ using Neo.Core.Models;
 using Neo.Rendering.AEEG;
 using Neo.Rendering.Core;
 using Neo.Rendering.EEG;
+using Neo.Rendering.Layers;
 using Neo.Rendering.Mapping;
 using Neo.Rendering.Resources;
 using Neo.UI.Services;
@@ -54,6 +55,8 @@ public sealed class WaveformRenderHost : IDisposable
     private readonly UiAeegTrendRenderer _aeegRenderer;
     private readonly UiAeegGridAndAxisRenderer _aeegGridRenderer;
     private readonly EegPreviewRenderer _eegPreviewRenderer;
+    private readonly TimeAxisRenderer _timeAxisRenderer;
+    private readonly AeegSemiLogVisualizer _semiLogVisualizer;
     private readonly PlaybackClock _playbackClock;
     private readonly IAuditService? _audit;
     private readonly IThemeService? _themeService;
@@ -239,13 +242,22 @@ public sealed class WaveformRenderHost : IDisposable
         _aeegRenderer = new UiAeegTrendRenderer();
         _aeegGridRenderer = new UiAeegGridAndAxisRenderer();
         _eegPreviewRenderer = new EegPreviewRenderer();
+        _timeAxisRenderer = new TimeAxisRenderer();
+        _semiLogVisualizer = new AeegSemiLogVisualizer();
         _playbackClock = new PlaybackClock();
         _playbackClock.SeekTo(_playbackStartUs);
 
         // Subscribe to theme changes
         if (_themeService != null)
         {
+            UiAeegPalette.SetTheme(_themeService.CurrentTheme == ThemeType.Apple);
+            UiEegPalette.SetTheme(_themeService.CurrentTheme == ThemeType.Apple);
             _themeService.ThemeChanged += OnThemeChanged;
+        }
+        else
+        {
+            UiAeegPalette.SetTheme(isApple: false);
+            UiEegPalette.SetTheme(isApple: false);
         }
         // Clock starts paused; WaveformPanel bridge will call Start() when IsPlaying becomes true
         _renderContext = CreateRenderContext();
@@ -275,14 +287,16 @@ public sealed class WaveformRenderHost : IDisposable
     /// Resizes the render target and reinitializes resources.
     /// Safe to call multiple times; only resizes if dimensions change.
     /// </summary>
-    public void Resize(int width, int height)
+    public void Resize(int width, int height, double dpiX = 96.0, double dpiY = 96.0)
     {
         if (_disposed) return;
         if (width <= 0 || height <= 0) return;
-        if (_renderer.Width == width && _renderer.Height == height) return;
+        if (_renderer.Width == width && _renderer.Height == height &&
+            Math.Abs(_renderer.DpiX - (float)dpiX) < 0.01f &&
+            Math.Abs(_renderer.DpiY - (float)dpiY) < 0.01f) return;
 
         // Resize D3D resources
-        _renderer.Resize(width, height);
+        _renderer.Resize(width, height, dpiX, dpiY);
 
         // Reinitialize ResourceCache with new DeviceContext
         if (_renderer.DeviceContext != null)
@@ -376,8 +390,8 @@ public sealed class WaveformRenderHost : IDisposable
                         sweepData[1], _layout.EegPreview2, _lane1YAxisRangeUv, _lane1GainMicrovoltsPerCm);
                 }
 
-                // NIRS placeholder
-                RenderPlaceholder(_renderer.DeviceContext, "NIRS Trend (6ch)", _layout.Nirs);
+                // NIRS UI placeholder (layout only, no data-logic changes)
+                RenderNirsPlaceholder(_renderer.DeviceContext, _layout.Nirs);
 
                 RenderSeparators(_renderer.DeviceContext);
             }
@@ -410,7 +424,7 @@ public sealed class WaveformRenderHost : IDisposable
             FrameNumber = _frameNumber,
             ViewportWidth = _renderer.Width,
             ViewportHeight = _renderer.Height,
-            Dpi = 96.0,
+            Dpi = _renderer.DpiX,
             Channels = channels
         };
     }
@@ -432,11 +446,125 @@ public sealed class WaveformRenderHost : IDisposable
             return;
 
         var background = _resourceCache.DarkGrayBrush;
-        var textBrush = _resourceCache.LightGrayBrush;
+        var textColor = GetThemeTextColorOrDefault(_themeService?.CurrentTheme == ThemeType.Apple
+            ? new Color4(0.07f, 0.07f, 0.07f, 0.96f)
+            : new Color4(0.80f, 0.80f, 0.80f, 1.00f));
+        var textBrush = _resourceCache.GetSolidBrush(textColor);
         var textFormat = _resourceCache.SmallTextFormat;
 
         context.FillRectangle(area, background);
         context.DrawText(label, textFormat, area, textBrush);
+    }
+
+    private void RenderNirsPlaceholder(ID2D1DeviceContext context, in Vortice.Mathematics.Rect area)
+    {
+        if (area.Width <= 0 || area.Height <= 0)
+            return;
+
+        bool isApple = _themeService?.CurrentTheme != ThemeType.Medical;
+        float accentR = isApple ? 0.35f : 0.15f;
+        float accentG = isApple ? 0.78f : 0.78f;
+        float accentB = isApple ? 0.98f : 0.85f;
+        float panelR = isApple ? 0.11f : 0.10f;
+        float panelG = isApple ? 0.12f : 0.13f;
+        float panelB = isApple ? 0.14f : 0.16f;
+        float cardR = isApple ? 0.15f : 0.14f;
+        float cardG = isApple ? 0.17f : 0.18f;
+        float cardB = isApple ? 0.20f : 0.22f;
+
+        var panelBackground = _resourceCache.GetSolidBrush(panelR, panelG, panelB, 1f);
+        var cardBackground = _resourceCache.GetSolidBrush(cardR, cardG, cardB, 1f);
+        var borderBrush = _resourceCache.GetSolidBrush(accentR, accentG, accentB, 0.52f);
+        var gridBrush = _resourceCache.GetSolidBrush(accentR, accentG, accentB, 0.28f);
+        var trendBrush = _resourceCache.GetSolidBrush(accentR, accentG, accentB, 0.96f);
+        var textColor = isApple
+            ? GetThemeTextColorOrDefault(new Color4(0.07f, 0.07f, 0.07f, 0.96f))
+            : new Color4(accentR, accentG, accentB, 0.92f);
+        var textBrush = _resourceCache.GetSolidBrush(textColor);
+        var titleFormat = _resourceCache.GetTextFormat("Segoe UI", 10f);
+
+        context.FillRectangle(area, panelBackground);
+
+        var titleArea = new Vortice.Mathematics.Rect(
+            area.Left + 10f,
+            area.Top + 6f,
+            area.Right - 10f,
+            area.Top + 24f);
+        context.DrawText("NIRS 趋势占位（4通道）", titleFormat, titleArea, textBrush);
+
+        const int channelCount = 4;
+        const float gap = 6f;
+        float top = area.Top + 28f;
+        float bottom = area.Bottom - 8f;
+        float height = Math.Max(0f, bottom - top);
+        float laneHeight = (height - (channelCount - 1) * gap) / channelCount;
+        if (laneHeight <= 0f)
+            return;
+
+        for (int i = 0; i < channelCount; i++)
+        {
+            float laneTop = top + i * (laneHeight + gap);
+            var lane = new Vortice.Mathematics.Rect(
+                area.Left + 8f,
+                laneTop,
+                area.Right - 8f,
+                laneTop + laneHeight);
+
+            context.FillRectangle(lane, cardBackground);
+            context.DrawRectangle(lane, borderBrush, 1f);
+
+            float midY = (lane.Top + lane.Bottom) * 0.5f;
+            float quarterY1 = lane.Top + lane.Height * 0.30f;
+            float quarterY2 = lane.Top + lane.Height * 0.70f;
+            context.DrawLine(new Vector2(lane.Left + 2f, quarterY1), new Vector2(lane.Right - 2f, quarterY1), gridBrush, 1f);
+            context.DrawLine(new Vector2(lane.Left + 2f, midY), new Vector2(lane.Right - 2f, midY), gridBrush, 1f);
+            context.DrawLine(new Vector2(lane.Left + 2f, quarterY2), new Vector2(lane.Right - 2f, quarterY2), gridBrush, 1f);
+
+            float accentX = lane.Left + 2f;
+            context.DrawLine(
+                new Vector2(accentX, lane.Top + 1f),
+                new Vector2(accentX, lane.Bottom - 1f),
+                trendBrush,
+                1.4f);
+
+            var labelRect = new Vortice.Mathematics.Rect(lane.Left + 8f, lane.Top + 2f, lane.Left + 60f, lane.Bottom);
+            context.DrawText($"CH{i + 1}", titleFormat, labelRect, textBrush);
+
+            // Draw waveform placeholder (no percentage text at lower-left NIRS region).
+            float xStart = lane.Left + 54f;
+            float xEnd = lane.Right - 8f;
+            int steps = 54;
+            float amplitude = Math.Max(2f, lane.Height * 0.20f);
+            Vector2 prev = new(xStart, midY);
+            for (int step = 1; step <= steps; step++)
+            {
+                float t = step / (float)steps;
+                float x = xStart + (xEnd - xStart) * t;
+                float phase = (i * 0.7f) + t * 7.2f;
+                float y = midY + MathF.Sin(phase * 2.3f) * amplitude * 0.55f + MathF.Sin(phase * 0.7f) * amplitude * 0.30f;
+                Vector2 current = new(x, y);
+                context.DrawLine(prev, current, trendBrush, 1.4f);
+                prev = current;
+            }
+        }
+    }
+
+    private static Color4 GetThemeTextColorOrDefault(Color4 fallback)
+    {
+        try
+        {
+            if (Application.Current?.Resources["TextOnDarkBrush"] is SolidColorBrush brush)
+            {
+                var c = brush.Color;
+                return new Color4(c.ScR, c.ScG, c.ScB, c.ScA);
+            }
+        }
+        catch
+        {
+            // Keep fallback if resource lookup fails in startup/teardown timing windows.
+        }
+
+        return fallback;
     }
 
     private void UpdateAeegRenderDataIfNeeded()
@@ -531,14 +659,35 @@ public sealed class WaveformRenderHost : IDisposable
         var visibleRange = new TimeRange(startUs, endUs);
 
         // Render Y-axis labels on the left
-        _aeegGridRenderer.Render(context, _resourceCache, yAxisArea, showMinorTicks: false, showLabels: true, labelMargin: 2f);
+        _aeegGridRenderer.Render(context, _resourceCache, yAxisArea, showMinorTicks: false, showLabels: true, labelMargin: 8f);
 
         // Render trend area with grid (no labels)
         _aeegGridRenderer.Render(context, _resourceCache, trendArea, showMinorTicks: true, showLabels: false);
 
-        // Render time grid and X-axis labels
-        _aeegGridRenderer.RenderTimeGrid(context, _resourceCache, trendArea, visibleRange, (int)trendArea.Width, majorIntervalSeconds: 300.0, minorIntervalSeconds: 60.0);
-        RenderTimeAxisLabels(context, timeAxisArea, visibleRange);
+        // Optional semi-log region visualization (background + 10uV boundary + labels).
+        var visOptions = AeegSemiLogVisualizer.VisualizationOptions.Default with
+        {
+            ShowRegionBackground = true,
+            ShowBoundaryLine = true,
+            ShowRegionLabels = false,
+            BoundaryColor = UiAeegPalette.BoundaryLine,
+            LabelColor = UiAeegPalette.AxisLabel
+        };
+        _semiLogVisualizer.Render(context, _resourceCache, trendArea, visOptions);
+
+        // Render enhanced time axis and vertical time grid.
+        var axisOptions = TimeAxisRenderer.RenderOptions.Default with
+        {
+            ShowMinorTicks = true,
+            ShowLabels = true,
+            ShowCurrentTimeIndicator = false,
+            BackgroundColor = UiAeegPalette.Background,
+            MajorGridColor = UiAeegPalette.MajorGridLine,
+            MinorGridColor = UiAeegPalette.MinorGridLine,
+            LabelColor = UiAeegPalette.AxisLabel,
+            CurrentTimeColor = UiAeegPalette.BoundaryLine
+        };
+        _timeAxisRenderer.Render(context, _resourceCache, visibleRange, trendArea, timeAxisArea, axisOptions);
 
         if (data.HasValue)
         {
@@ -572,14 +721,33 @@ public sealed class WaveformRenderHost : IDisposable
         var visibleRange = new TimeRange(startUs, endUs);
 
         // Render Y-axis labels
-        _aeegGridRenderer.Render(context, _resourceCache, yAxisArea, showMinorTicks: false, showLabels: true, labelMargin: 2f);
+        _aeegGridRenderer.Render(context, _resourceCache, yAxisArea, showMinorTicks: false, showLabels: true, labelMargin: 8f);
 
         // Render grid
         _aeegGridRenderer.Render(context, _resourceCache, trendArea, showMinorTicks: true, showLabels: false);
 
-        // Render time grid and X-axis labels
-        _aeegGridRenderer.RenderTimeGrid(context, _resourceCache, trendArea, visibleRange, (int)trendArea.Width, majorIntervalSeconds: 300.0, minorIntervalSeconds: 60.0);
-        RenderTimeAxisLabels(context, timeAxisArea, visibleRange);
+        var visOptions = AeegSemiLogVisualizer.VisualizationOptions.Default with
+        {
+            ShowRegionBackground = true,
+            ShowBoundaryLine = true,
+            ShowRegionLabels = false,
+            BoundaryColor = UiAeegPalette.BoundaryLine,
+            LabelColor = UiAeegPalette.AxisLabel
+        };
+        _semiLogVisualizer.Render(context, _resourceCache, trendArea, visOptions);
+
+        var axisOptions = TimeAxisRenderer.RenderOptions.Default with
+        {
+            ShowMinorTicks = true,
+            ShowLabels = true,
+            ShowCurrentTimeIndicator = false,
+            BackgroundColor = UiAeegPalette.Background,
+            MajorGridColor = UiAeegPalette.MajorGridLine,
+            MinorGridColor = UiAeegPalette.MinorGridLine,
+            LabelColor = UiAeegPalette.AxisLabel,
+            CurrentTimeColor = UiAeegPalette.BoundaryLine
+        };
+        _timeAxisRenderer.Render(context, _resourceCache, visibleRange, trendArea, timeAxisArea, axisOptions);
 
         // Render both channels
         if (_aeegCh1Ready)
@@ -627,7 +795,7 @@ public sealed class WaveformRenderHost : IDisposable
     }
 
     // aEEG layout constants - based on reference design
-    private const float AeegYAxisLabelWidth = 50f;   // Y-axis labels on left (reduced to avoid overlap with toolbar)
+    private const float AeegYAxisLabelWidth = 84f;   // Keep enough room for large left-axis labels (14px)
     private float AeegGsWidthRatio => 0.0f;  // GS histogram removed from UI baseline
     private const float AeegTimeAxisHeight = 18f;    // X-axis time labels at bottom
 
@@ -682,24 +850,42 @@ public sealed class WaveformRenderHost : IDisposable
 
     private void RenderSeparators(ID2D1DeviceContext context)
     {
-        var separatorBrush = _resourceCache.GetSolidBrush(UiAeegPalette.MajorGridLine);
+        var majorBrush = _resourceCache.GetSolidBrush(UiAeegPalette.BoundaryLine);
+        var normalBrush = _resourceCache.GetSolidBrush(UiAeegPalette.MajorGridLine);
         float left = (float)_layout.Aeeg1.Left;
         float right = (float)_layout.Aeeg1.Right;
 
-        // Draw separator lines between all 5 regions
-        float[] ys =
-        [
-            (float)_layout.Aeeg1.Bottom,        // After aEEG Ch1
-            (float)_layout.EegPreview1.Bottom,  // After EEG Preview Ch1
-            (float)_layout.Aeeg2.Bottom,        // After aEEG Ch2
-            (float)_layout.EegPreview2.Bottom,  // After EEG Preview Ch2
-            (float)_layout.Nirs.Bottom          // After NIRS
-        ];
+        // Major separators between aEEG and EEG bands (clinically important boundaries)
+        context.DrawLine(
+            new Vector2(left, (float)_layout.Aeeg1.Bottom),
+            new Vector2(right, (float)_layout.Aeeg1.Bottom),
+            majorBrush,
+            2.0f);
 
-        foreach (float y in ys)
-        {
-            context.DrawLine(new Vector2(left, y), new Vector2(right, y), separatorBrush, 1.0f);
-        }
+        context.DrawLine(
+            new Vector2(left, (float)_layout.Aeeg2.Bottom),
+            new Vector2(right, (float)_layout.Aeeg2.Bottom),
+            majorBrush,
+            2.0f);
+
+        // Normal separators for other region boundaries
+        context.DrawLine(
+            new Vector2(left, (float)_layout.EegPreview1.Bottom),
+            new Vector2(right, (float)_layout.EegPreview1.Bottom),
+            normalBrush,
+            1.0f);
+
+        context.DrawLine(
+            new Vector2(left, (float)_layout.EegPreview2.Bottom),
+            new Vector2(right, (float)_layout.EegPreview2.Bottom),
+            normalBrush,
+            1.0f);
+
+        context.DrawLine(
+            new Vector2(left, (float)_layout.Nirs.Bottom),
+            new Vector2(right, (float)_layout.Nirs.Bottom),
+            normalBrush,
+            1.0f);
     }
 
     /// <summary>
@@ -736,9 +922,12 @@ public sealed class WaveformRenderHost : IDisposable
 
         // Update AEEG color palette
         AeegColorPalette.SetTheme(aeegTheme);
+        UiAeegPalette.SetTheme(newTheme == ThemeType.Apple);
+        UiEegPalette.SetTheme(newTheme == ThemeType.Apple);
 
         // Force redraw by clearing resource cache (brushes will be recreated with new colors)
         // Note: ResourceCache doesn't have Invalidate, resources will update on next render
+        _layeredRenderer.InvalidateAll();
     }
 
     /// <summary>
